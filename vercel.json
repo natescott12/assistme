@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/callback", "destination": "/api/callback" },
+    { "source": "/gmail-callback", "destination": "/api/gmail-callback" }
+  ],
+  "crons": [
+    { "path": "/api/briefing", "schedule": "0 15 * * *" }
+  ]
+}
