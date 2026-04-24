@@ -12,12 +12,8 @@ const C = {
 
 const F = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
-const WEATHER_KEY = 'REMOVED';
-
 const fetchWeather = async (lat, lon) => {
-  const res = await fetch(
-    `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_KEY}&units=imperial`
-  );
+  const res = await fetch(`/api/weather?type=current&lat=${lat}&lon=${lon}`);
   return res.json();
 };
 
@@ -933,7 +929,7 @@ export default function App() {
   const loadForecast = async () => {
     if (!coords) return;
     try {
-      const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${coords.lat}&lon=${coords.lon}&appid=${WEATHER_KEY}&units=imperial`);
+      const res = await fetch(`/api/weather?type=forecast&lat=${coords.lat}&lon=${coords.lon}`);
       if (!res.ok) return;
       const data = await res.json();
       setForecast(data);
