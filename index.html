@@ -7,61 +7,47 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Robin" />
-  <meta name="mobile-web-app-capable" content="yes" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icon-192.png" />
   <link rel="icon" type="image/png" href="/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
   <title>Robin</title>
   <style>
     :root {
       --bg: #FFFFFF;
-      --surface: #F7F7F7;
-      --border: #E5E5E5;
       --text: #111111;
-      --text-dim: #888888;
-      --text-faint: #B5B5B5;
+      --text-sub: #888888;
+      --text-muted: #BBBBBB;
+      --border: #E5E5E5;
+      --surface: #F7F7F7;
+      --grid-line: #F0F0F0;
       --accent: #2EC4B6;
-      --accent-dim: rgba(46,196,182,0.12);
-      --accent-glow: rgba(46,196,182,0.30);
-      --black: #111111;
-      --success: #2BB673;
-      --dark-bg: #0A0A0A;
+      --error: #CC3333;
+      --green: #2BB673;
       --safe-top: env(safe-area-inset-top);
       --safe-bottom: env(safe-area-inset-bottom);
-      --tabbar-h: 64px;
       --statusbar-h: 44px;
+      --tabbar-h: 72px;
       --addbar-h: 64px;
       --pad-x: 24px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; }
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       font-family: 'DM Sans', -apple-system, system-ui, sans-serif;
-      font-size: 16px;
-      line-height: 1.4;
-      overflow: hidden;
-      overscroll-behavior: none;
+      font-size: 16px; line-height: 1.4;
+      overflow: hidden; overscroll-behavior: none;
       -webkit-font-smoothing: antialiased;
-      user-select: none;
-      -webkit-user-select: none;
+      user-select: none; -webkit-user-select: none;
     }
     button, input, textarea { font-family: inherit; color: inherit; background: none; border: none; outline: none; }
     button { cursor: pointer; }
     input, textarea { user-select: text; -webkit-user-select: text; }
-    .mono { font-family: 'Space Mono', 'SF Mono', monospace; letter-spacing: -0.01em; }
-    .label {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.20em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
+    .mono { font-family: 'Space Mono', 'SF Mono', monospace; }
+    .serif { font-family: 'Playfair Display', Georgia, serif; }
     .hidden { display: none !important; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 
@@ -69,592 +55,670 @@
     .statusbar {
       position: fixed; top: 0; left: 0; right: 0;
       height: calc(var(--statusbar-h) + var(--safe-top));
-      padding: calc(var(--safe-top) + 8px) var(--pad-x) 6px var(--pad-x);
+      padding: calc(var(--safe-top) + 10px) var(--pad-x) 6px var(--pad-x);
       display: flex; align-items: center; justify-content: space-between;
-      font-family: 'Space Mono', monospace;
-      font-size: 13px; font-weight: 700;
+      font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
       color: var(--text);
       background: linear-gradient(to bottom, var(--bg) 70%, transparent);
-      z-index: 50;
-      pointer-events: none;
+      z-index: 50; pointer-events: none;
     }
-    .statusbar .right { display: flex; gap: 5px; align-items: center; opacity: 0.85; }
-    .statusbar .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text); display: inline-block; }
-    /* Capture screen inverts the status bar */
-    .view[data-view="capture"].active ~ .statusbar,
-    body.capture-on .statusbar {
-      color: #FFFFFF;
-      background: linear-gradient(to bottom, var(--dark-bg) 70%, transparent);
-    }
-    body.capture-on .statusbar .dot { background: #FFFFFF; }
+    .statusbar .right { display: flex; gap: 5px; align-items: center; }
+    .statusbar .right .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text); }
 
-    /* ── Tab bar ──────────────────────────────────────────────── */
+    /* ── Crumbs (section breadcrumb) ──────────────────────────── */
+    .crumb {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      font-weight: 700; letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 4px 0 12px 0;
+    }
+    .crumb .l { color: var(--text-muted); }
+    .crumb .r { color: var(--text-muted); }
+    .divider { height: 1px; background: var(--border); }
+    .divider-strong { height: 1px; background: var(--text); }
+
+    /* ── Tabbar ───────────────────────────────────────────────── */
     .tabbar {
       position: fixed; bottom: 0; left: 0; right: 0;
       height: calc(var(--tabbar-h) + var(--safe-bottom));
       padding-bottom: var(--safe-bottom);
+      background: var(--bg); border-top: 1px solid var(--border);
       display: grid; grid-template-columns: repeat(5, 1fr);
-      background: var(--bg);
-      border-top: 1px solid var(--border);
       z-index: 40;
     }
     .tabbar button {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 4px;
-      font-family: 'Space Mono', monospace;
-      font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
-      color: var(--text-faint);
-      transition: color 120ms ease;
+      gap: 4px; padding: 8px 0;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 500;
+      color: var(--text-muted);
     }
-    .tabbar button .tab-icon { font-size: 18px; line-height: 1; }
-    .tabbar button.active { color: var(--accent); }
-    .tabbar button.active .tab-icon { color: var(--accent); }
+    .tabbar button svg { width: 22px; height: 22px; stroke: currentColor; }
+    .tabbar button.active { color: var(--text); }
 
-    /* ── View container ───────────────────────────────────────── */
+    /* ── Views ────────────────────────────────────────────────── */
     .view {
       position: absolute; inset: 0;
       padding-top: calc(var(--statusbar-h) + var(--safe-top));
       padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom));
-      overflow-y: auto;
-      overflow-x: hidden;
+      overflow-y: auto; overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
-      display: none;
-      background: var(--bg);
+      display: none; background: var(--bg);
     }
     .view.active { display: block; }
+    .view::-webkit-scrollbar { display: none; }
     .view-inner { padding: 4px var(--pad-x) 24px var(--pad-x); }
     .view-inner.with-addbar { padding-bottom: calc(var(--addbar-h) + 24px); }
-    .view::-webkit-scrollbar { display: none; }
 
-    /* ── Onboarding ───────────────────────────────────────────── */
-    .ob {
-      position: fixed; inset: 0;
-      background: var(--bg);
-      padding: calc(var(--safe-top) + 48px) var(--pad-x) calc(var(--safe-bottom) + 32px) var(--pad-x);
-      display: flex; flex-direction: column;
-      z-index: 100;
+    /* ── Subscreens (push-style sub pages) ────────────────────── */
+    .subscreen {
+      position: fixed; inset: 0; background: var(--bg);
+      z-index: 60; overflow-y: auto;
+      padding-top: calc(var(--statusbar-h) + var(--safe-top));
+      padding-bottom: calc(var(--addbar-h) + var(--safe-bottom));
     }
-    .ob-step { display: none; flex: 1; flex-direction: column; }
-    .ob-step.active { display: flex; }
-    .ob-progress {
-      display: flex; gap: 6px; margin-bottom: 36px;
+    .subscreen-inner { padding: 4px var(--pad-x) 24px var(--pad-x); }
+    .back-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 0 16px 0;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text); cursor: pointer;
     }
-    .ob-progress .seg {
-      flex: 1; height: 2px; border-radius: 1px;
-      background: var(--border);
-    }
-    .ob-progress .seg.done { background: var(--accent); }
-    .ob h2 {
-      font-family: 'DM Sans', sans-serif; font-weight: 700;
-      font-size: 30px; line-height: 1.1; letter-spacing: -0.02em;
-      color: var(--text);
-      margin-bottom: 8px;
-    }
-    .ob .sub {
-      color: var(--text-dim); font-size: 14px; margin-bottom: 32px;
-    }
-    .ob .stretch { flex: 1; }
+    .back-row .arrow { font-size: 18px; line-height: 1; }
 
-    .ob-launch {
-      align-items: center; justify-content: center; text-align: center;
+    /* ── Buttons ──────────────────────────────────────────────── */
+    .btn {
+      width: 100%; height: 54px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+      border-radius: 0;
+      transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
     }
-    .ob-launch .logo {
-      font-family: 'DM Sans', sans-serif; font-weight: 700;
-      font-size: 72px; letter-spacing: -0.04em; line-height: 1;
-      color: var(--text);
-      margin-bottom: 12px;
+    .btn-outline { border: 1px solid var(--text); background: var(--bg); color: var(--text); }
+    .btn-filled  { border: 1px solid var(--text); background: var(--text); color: #FFFFFF; }
+    .btn-outline-mono, .btn-filled-mono {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;
     }
-    .ob-launch .tag {
-      font-family: 'Space Mono', monospace; font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 0;
+    .btn:disabled { opacity: 0.35; }
+    .btn:active { opacity: 0.85; }
+    .btn-link {
+      width: 100%; padding: 14px;
+      background: transparent; color: var(--text-sub);
+      font-size: 13px;
     }
-    .ob-launch-buttons {
-      width: 100%;
-      display: flex; flex-direction: column; gap: 8px;
-      margin-top: auto;
-    }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .btn-row .btn:first-child { border-right: none; }
 
-    .field { margin-bottom: 18px; }
+    /* ── Inputs ──────────────────────────────────────────────── */
+    .field { margin-bottom: 16px; }
     .field label {
-      display: block;
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; font-weight: 700;
-      letter-spacing: 0.20em; text-transform: uppercase;
-      color: var(--text-dim);
+      display: block; font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.20em;
+      text-transform: uppercase; color: var(--text-muted);
       margin-bottom: 8px;
     }
-    .field input[type=text],
-    .field input[type=email],
-    .field input[type=password],
-    .field input[type=time] {
-      width: 100%; padding: 14px 16px;
-      background: var(--bg); color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 15px;
-      transition: border-color 120ms ease;
+    .field input {
+      width: 100%; padding: 16px; border: 1px solid var(--border);
+      border-radius: 0; background: var(--bg); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 15px;
     }
-    .field input::placeholder { color: var(--text-faint); }
-    .field input:focus { border-color: var(--accent); }
+    .field input::placeholder { color: var(--text-muted); }
+    .field input:focus { border-color: var(--text); }
 
-    .photo-picker {
-      width: 88px; height: 88px; border-radius: 50%;
-      background: var(--surface); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      color: var(--text-faint); font-size: 28px; font-weight: 300;
-      margin-bottom: 20px; overflow: hidden;
+    /* ── Onboarding container ─────────────────────────────────── */
+    #onboarding {
+      position: fixed; inset: 0; background: var(--bg);
+      z-index: 100; overflow-y: auto;
+    }
+    .ob-step { display: none; min-height: 100%; flex-direction: column;
+      padding: calc(var(--safe-top) + 20px) var(--pad-x) calc(var(--safe-bottom) + 24px) var(--pad-x);
+    }
+    .ob-step.active { display: flex; }
+    .ob-step h1 {
+      font-family: 'DM Sans', sans-serif; font-weight: 700;
+      font-size: 28px; line-height: 1.15; letter-spacing: -0.02em;
+      color: var(--text); margin: 8px 0 32px 0; white-space: pre-line;
+    }
+    .ob-step .sub { color: var(--text-sub); font-size: 14px; line-height: 1.5; margin-bottom: 32px; }
+    .ob-step .stretch { flex: 1; }
+
+    /* Splash */
+    .ob-splash {
+      align-items: center; justify-content: center;
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+      background-size: 20px 20px;
       cursor: pointer;
     }
-    .photo-picker img { width: 100%; height: 100%; object-fit: cover; }
-    .name-row { display: flex; gap: 12px; }
-    .name-row .field { flex: 1; }
-
-    .people-list { margin-bottom: 8px; }
-    .people-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
+    .ob-splash .wordmark {
+      font-family: 'Playfair Display', Georgia, serif; font-weight: 700;
+      font-size: 52px; color: var(--text); letter-spacing: -0.01em;
+      margin-bottom: 8px;
     }
-    .people-row .avatar {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: var(--surface); color: var(--text);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 600;
-      flex-shrink: 0;
-    }
-    .people-row .info { flex: 1; min-width: 0; }
-    .people-row .info .name { font-size: 15px; color: var(--text); }
-    .people-row .info .rel { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-    .people-row .rm {
-      color: var(--text-faint); font-size: 18px; padding: 4px 8px;
-    }
-    .add-person-btn {
-      width: 100%; padding: 14px;
-      background: transparent; color: var(--text-dim);
-      font-size: 14px; font-weight: 500;
-      border: 1px dashed var(--border);
-      border-radius: 10px;
-      margin-top: 12px;
+    .ob-splash .tag {
+      font-family: 'Space Mono', monospace; font-size: 13px;
+      color: var(--text-sub); letter-spacing: 0.04em;
     }
 
-    .calendar-card {
-      padding: 18px;
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 14px;
-      display: flex; align-items: center; gap: 14px;
-      margin-bottom: 12px;
-    }
-    .calendar-card .logo-circle {
-      width: 40px; height: 40px; border-radius: 10px;
-      background: linear-gradient(135deg, #4285F4, #34A853);
-      color: #FFFFFF;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; font-weight: 700;
-      flex-shrink: 0;
-    }
-    .calendar-card .copy { flex: 1; min-width: 0; }
-    .calendar-card .copy .title { font-size: 15px; font-weight: 600; color: var(--text); }
-    .calendar-card .copy .sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-    .calendar-card .connect {
-      padding: 8px 14px; background: var(--black); color: #FFFFFF;
-      border-radius: 999px; font-size: 12px; font-weight: 600;
-    }
-    .calendar-card.connected .connect { background: var(--accent-dim); color: var(--success); }
-
-    .hours-grid { display: flex; flex-direction: column; gap: 0; margin-bottom: 24px; }
-    .hours-row {
+    /* Goal selection */
+    .goal-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .goal-option {
+      width: 100%; min-height: 54px; padding: 16px;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 0; border-bottom: 1px solid var(--border);
+      border: 1px solid var(--text); background: var(--bg); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+      text-align: left; border-radius: 0;
+      transition: background 120ms ease, color 120ms ease;
     }
-    .hours-row:last-child { border-bottom: none; }
-    .hours-row .name { display: flex; flex-direction: column; }
-    .hours-row .name .t { font-size: 15px; color: var(--text); }
-    .hours-row .name .s { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-    .hours-row input[type=time] {
-      width: 110px; padding: 8px 12px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px;
-      font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
-      color: var(--text); text-align: center;
-    }
+    .goal-option.selected { background: var(--text); color: #FFFFFF; }
+    .goal-option .check { opacity: 0; }
+    .goal-option.selected .check { opacity: 1; }
 
-    .ob-done {
-      align-items: center; justify-content: center; text-align: center;
+    /* Feature grid */
+    .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 24px; }
+    .feature-tile {
+      padding: 28px 16px; min-height: 90px;
+      border: 1px solid var(--text);
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+      color: var(--text);
     }
-    .ob-done .check {
-      width: 88px; height: 88px; border-radius: 50%;
-      background: var(--accent); color: #FFFFFF;
+    .feature-tile .check { color: var(--accent); font-size: 14px; }
+    .feature-tile:nth-child(odd)  { border-right: none; }
+    .feature-tile:nth-child(n+3)  { border-top: none; }
+
+    /* Calendar tiles row */
+    .cal-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 24px 0; }
+    .cal-tile {
+      aspect-ratio: 1 / 1;
+      border: 1px solid var(--text);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px;
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+      color: var(--text);
+    }
+    .cal-tile:not(:last-child) { border-right: none; }
+    .cal-tile .icon { font-size: 18px; }
+    .cal-tile.selected { background: var(--text); color: #FFFFFF; }
+
+    /* Time picker (onboarding hours) */
+    .hours-rows { display: flex; flex-direction: column; gap: 12px; }
+    .hours-row-card {
+      border: 1px solid var(--text);
+      padding: 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer;
+    }
+    .hours-row-card .name { font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; }
+    .hours-row-card .val {
+      font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
+      display: flex; gap: 6px; align-items: center;
+    }
+    .hours-row-card .val .chev { color: var(--text-muted); }
+    .time-wheel {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 0; margin: 12px 0;
+      border: 1px solid var(--border);
+    }
+    .time-wheel .col {
+      height: 120px; overflow-y: auto; scroll-snap-type: y mandatory;
+      text-align: center; padding: 40px 0;
+      font-family: 'Space Mono', monospace; font-size: 18px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .time-wheel .col::-webkit-scrollbar { display: none; }
+    .time-wheel .col span { display: block; padding: 8px 0; scroll-snap-align: center; color: var(--text-muted); }
+    .time-wheel .col span.cur { color: var(--text); font-weight: 700; }
+
+    /* Notif intro mockup */
+    .notif-mock {
+      margin: 24px 0; padding: 20px;
+      background: #1F1F1F; color: #FFFFFF;
+      border-radius: 14px;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .notif-mock .icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--accent); flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 40px; font-weight: 300;
-      margin-bottom: 32px;
+      font-family: 'Playfair Display', serif; font-size: 18px;
+      color: #111;
     }
-    .ob-done h2 { text-align: center; }
-    .ob-done .sub { text-align: center; }
+    .notif-mock .body { flex: 1; }
+    .notif-mock .body .t { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .notif-mock .body .m { font-size: 13px; opacity: 0.85; }
+    .notif-mock .body .meta { font-size: 11px; opacity: 0.5; margin-top: 6px; font-family: 'Space Mono', monospace; }
 
-    .btn-primary {
-      width: 100%; padding: 16px;
-      background: var(--black); color: #FFFFFF;
-      border-radius: 12px; font-size: 15px; font-weight: 600;
-      transition: transform 80ms ease, opacity 120ms ease;
+    /* Ready */
+    .ob-ready { align-items: center; justify-content: center; text-align: center; }
+    .ob-ready .crumb-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      font-weight: 700; letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 24px;
     }
-    .btn-primary:active { transform: scale(0.985); }
-    .btn-primary:disabled { opacity: 0.4; }
-    .btn-ghost {
-      width: 100%; padding: 14px;
-      background: transparent; color: var(--text-dim);
-      font-size: 14px; font-weight: 500;
+    .ob-ready .word {
+      font-family: 'Playfair Display', serif; font-weight: 700;
+      font-size: 64px; line-height: 1; color: var(--text);
+      margin-bottom: 16px;
+    }
+    .ob-ready .copy {
+      font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.55;
+      color: var(--text-sub); max-width: 280px; margin-bottom: 40px;
     }
 
     /* ── Today screen ─────────────────────────────────────────── */
     .today-weather-row {
       display: flex; justify-content: space-between; align-items: flex-start;
-      margin: 24px 0 16px 0;
+      margin: 24px 0 12px 0;
     }
     .today-weather {
-      display: flex; flex-direction: column; gap: 2px;
+      font-family: 'DM Sans', sans-serif; font-size: 12px;
+      color: var(--text-sub);
     }
-    .today-weather .hilo {
-      font-family: 'Space Mono', monospace; font-size: 11px;
-      font-weight: 700; letter-spacing: 0.04em;
-      color: var(--text);
-    }
-    .today-weather .cond {
-      font-family: 'Space Mono', monospace; font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.16em; text-transform: uppercase;
-      color: var(--text);
-      margin-top: 2px;
-    }
+    .today-weather .hilo { font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .today-weather .cond { color: var(--text-sub); }
     .today-date-vert {
       writing-mode: vertical-rl; transform: rotate(180deg);
-      font-family: 'Space Mono', monospace; font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.22em; text-transform: uppercase;
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: 11px; letter-spacing: 0.04em;
       color: var(--accent);
     }
-
     .today-day-row {
       display: flex; align-items: center; justify-content: space-between;
+      gap: 16px;
       margin: 8px 0 20px 0;
     }
     .today-day {
       font-family: 'DM Sans', sans-serif; font-weight: 700;
-      font-size: 30px; line-height: 1; letter-spacing: -0.02em;
+      font-size: 36px; line-height: 1; letter-spacing: -0.02em;
       color: var(--text);
-      text-transform: lowercase;
     }
-    .today-brief-play {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: var(--accent); color: #FFFFFF;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px;
+    .play-chip {
+      display: inline-flex; gap: 8px; align-items: center;
+      padding: 8px 14px;
+      border: 1px solid var(--text);
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
       flex-shrink: 0;
-      transition: transform 80ms ease, box-shadow 200ms ease;
     }
-    .today-brief-play:active { transform: scale(0.95); }
-    .today-brief-play.speaking { animation: pulse-accent 1.2s infinite; }
-    @keyframes pulse-accent {
-      0%,100% { box-shadow: 0 0 0 0 var(--accent-glow); }
-      50%     { box-shadow: 0 0 0 8px transparent; }
-    }
-
+    .play-chip .tri { color: var(--text); }
     .today-brief {
-      padding: 4px 0 4px 14px;
-      border-left: 2px solid var(--accent);
-      font-size: 13px; line-height: 1.55;
-      color: var(--text-dim);
-      margin-bottom: 36px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.65;
+      color: var(--text-sub); margin: 4px 0 24px 0;
     }
-
-    .section { margin-bottom: 32px; }
-    .section .label { margin-bottom: 12px; }
-    .section .section-divider {
-      height: 1px; background: var(--border);
-      margin-bottom: 4px;
+    .section { margin-bottom: 24px; }
+    .section .label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      font-weight: 700; letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 8px;
     }
     .row {
       display: flex; align-items: center; gap: 14px;
-      padding: 14px 0;
-      border-bottom: 1px solid var(--border);
+      padding: 16px 0; border-bottom: 1px solid var(--border);
     }
-    .row:last-child { border-bottom: none; }
+    .row:first-child { border-top: 1px solid var(--border); }
     .row .time {
-      font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
-      color: var(--text-dim); width: 56px; flex-shrink: 0;
+      font-family: 'Space Mono', monospace; font-size: 13px;
+      font-weight: 700; color: var(--text-sub);
+      width: 56px; flex-shrink: 0;
     }
     .row .check {
-      width: 20px; height: 20px; border-radius: 50%;
-      border: 1.5px solid var(--text-faint); background: var(--bg);
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 1.5px solid var(--text); background: var(--bg);
       flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      transition: background 120ms ease, border-color 120ms ease;
+      transition: background 120ms ease;
     }
     .row.done .check {
-      background: var(--accent); border-color: var(--accent);
-      color: #FFFFFF; font-size: 11px;
+      background: var(--text); color: #FFFFFF; font-size: 10px;
     }
     .row.done .check::after { content: '✓'; }
     .row .row-label {
       flex: 1; font-size: 15px; color: var(--text); min-width: 0;
     }
-    .row.done .row-label { color: var(--text-dim); text-decoration: line-through; }
-    .row .row-icon {
-      font-size: 14px; color: var(--text-faint); flex-shrink: 0;
-    }
+    .row.done .row-label { color: var(--text-muted); text-decoration: line-through; }
+    .row .row-icon { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
     .empty {
-      color: var(--text-faint); font-size: 13px;
-      padding: 12px 0;
+      padding: 28px 0; text-align: left;
+      color: var(--text-sub); font-size: 14px;
     }
+    .empty .empty-heading {
+      font-family: 'DM Sans', sans-serif; font-weight: 700;
+      font-size: 22px; color: var(--text);
+      margin-bottom: 8px;
+    }
+    .empty .empty-copy { line-height: 1.5; margin-bottom: 20px; }
 
-    /* ── Sticky add bar ───────────────────────────────────────── */
+    /* ── Add bar ──────────────────────────────────────────────── */
     .addbar {
       position: fixed; left: 0; right: 0;
       bottom: calc(var(--tabbar-h) + var(--safe-bottom));
       height: var(--addbar-h);
-      padding: 12px var(--pad-x);
+      padding: 10px var(--pad-x);
       display: flex; gap: 10px; align-items: center;
-      background: linear-gradient(to top, var(--bg) 70%, rgba(255,255,255,0.7));
+      background: var(--bg);
+      border-top: 1px solid var(--border);
       z-index: 30;
     }
     .addbar input {
-      flex: 1; padding: 12px 18px;
+      flex: 1; height: 44px; padding: 0 18px;
       background: var(--surface); color: var(--text);
       border: 1px solid var(--border);
       border-radius: 999px; font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
     }
-    .addbar input::placeholder { color: var(--text-faint); }
-    .addbar .mic {
-      width: 42px; height: 42px; border-radius: 50%;
-      background: var(--accent); color: #FFFFFF;
+    .addbar input::placeholder { color: var(--text-muted); }
+    .addbar .mic-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--text); color: #FFFFFF;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; flex-shrink: 0;
+      flex-shrink: 0;
       transition: transform 80ms ease;
     }
-    .addbar .mic:active { transform: scale(0.94); }
+    .addbar .mic-btn:active { transform: scale(0.94); }
+    .addbar .mic-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
+
+    /* ── Chat ─────────────────────────────────────────────────── */
+    .chat-header {
+      text-align: center; padding: 12px 0;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      font-weight: 700; letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--text); display: flex; gap: 8px; justify-content: center; align-items: center;
+    }
+    .chat-header .greendot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+      display: inline-block;
+    }
+    .chat-list { display: flex; flex-direction: column; gap: 14px; padding-top: 12px; }
+    .bubble {
+      max-width: 84%; padding: 12px 14px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45;
+    }
+    .bubble.robin {
+      align-self: flex-start;
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: var(--surface); color: var(--text);
+      border-radius: 18px;
+      padding: 10px 16px;
+    }
+    .reply-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; align-self: flex-start; max-width: 100%; }
+    .reply-chip {
+      padding: 8px 14px; border: 1px solid var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 12px;
+      color: var(--text); background: var(--bg);
+    }
 
     /* ── Lists screen ─────────────────────────────────────────── */
     .screen-title {
       font-family: 'DM Sans', sans-serif; font-weight: 700;
-      font-size: 30px; line-height: 1.05; letter-spacing: -0.02em;
+      font-size: 32px; line-height: 1.05; letter-spacing: -0.02em;
       color: var(--text);
-      margin: 6px 0 20px 0;
+      margin: 4px 0 20px 0;
     }
-    .divider { height: 1px; background: var(--border); margin: 12px 0 16px 0; }
-    .bucket-row {
+    .seg-control {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+      margin-bottom: 16px;
+      border: 1px solid var(--text);
+    }
+    .seg-control button {
+      height: 38px; font-family: 'Space Mono', monospace;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text); background: var(--bg);
+    }
+    .seg-control button.active {
+      background: var(--text); color: #FFFFFF;
+    }
+    .list-row {
       display: flex; align-items: center; justify-content: space-between;
       padding: 18px 0; border-bottom: 1px solid var(--border);
       cursor: pointer;
     }
-    .bucket-row .name {
-      font-size: 16px; color: var(--text);
+    .list-row .name { font-family: 'DM Sans', sans-serif; font-size: 16px; color: var(--text); }
+    .list-row .meta { display: flex; align-items: center; gap: 8px; }
+    .list-row .count {
+      font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
+      color: var(--text);
     }
-    .bucket-row .meta { display: flex; align-items: center; gap: 12px; }
-    .bucket-row .count {
-      font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
-      color: var(--accent);
-    }
-    .bucket-row .chev { color: var(--text-faint); font-size: 16px; }
-    .container-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 0; border-bottom: 1px solid var(--border);
-      cursor: pointer;
-    }
-    .container-row .name { font-size: 15px; color: var(--text); }
-    .container-row .meta { display: flex; gap: 12px; align-items: center; }
-    .container-row .count {
-      font-family: 'Space Mono', monospace; font-size: 13px;
-      color: var(--text-dim);
-    }
-    .new-container-btn {
-      margin-top: 16px; padding: 14px;
-      background: transparent; color: var(--text-dim);
-      font-size: 14px; font-weight: 500;
-      border: 1px dashed var(--border);
-      border-radius: 10px;
-      width: 100%; text-align: center;
-    }
-
-    /* ── List detail ─────────────────────────────────────────── */
-    #list-detail {
-      position: fixed; inset: 0;
-      background: var(--bg);
-      z-index: 60;
-      padding-top: calc(var(--statusbar-h) + var(--safe-top));
-      padding-bottom: calc(var(--addbar-h) + var(--safe-bottom));
-      overflow-y: auto;
-    }
-    .list-detail-inner { padding: 4px var(--pad-x) 24px var(--pad-x); }
-    .back-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 0 24px 0;
-      cursor: pointer;
-    }
-    .back-row .arrow { font-size: 22px; color: var(--text); line-height: 1; }
-    .back-row .label {
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.20em; text-transform: uppercase;
-      color: var(--accent);
-    }
+    .list-row .chev { color: var(--text-muted); font-size: 16px; }
+    .list-row:first-child { border-top: 1px solid var(--border); }
 
     /* ── Calendar ─────────────────────────────────────────────── */
-    .month-title {
-      font-family: 'DM Sans', sans-serif; font-weight: 700;
-      font-size: 30px; line-height: 1.05; letter-spacing: -0.02em;
-      color: var(--text);
-      margin: 6px 0 24px 0;
-    }
-    .week-strip {
+    .cal-grid {
       display: grid; grid-template-columns: repeat(7, 1fr);
-      gap: 6px; margin-bottom: 28px;
+      gap: 4px 0;
+      margin-bottom: 16px;
     }
-    .week-day {
+    .cal-grid .dow {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-muted); text-align: center;
+      padding: 8px 0;
+    }
+    .cal-grid .day {
+      aspect-ratio: 1 / 1;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
+    }
+    .cal-grid .day.muted { color: var(--text-muted); }
+    .cal-grid .day.today {
+      background: var(--text); color: #FFFFFF;
+      border-radius: 50%; width: 32px; height: 32px;
+      margin: 0 auto;
+    }
+    .day-strip {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 4px; margin: 12px 0 20px 0;
+    }
+    .day-strip .ds-day {
       display: flex; flex-direction: column; align-items: center;
       padding: 8px 0;
-      border-radius: 6px;
-      cursor: pointer;
     }
-    .week-day .dow {
+    .day-strip .ds-day .dow {
       font-family: 'Space Mono', monospace; font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 4px;
+      font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 4px;
     }
-    .week-day .num {
-      font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700;
+    .day-strip .ds-day .num {
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
       color: var(--text);
     }
-    .week-day.today {
-      background: var(--black);
-    }
-    .week-day.today .dow,
-    .week-day.today .num { color: #FFFFFF; }
-    .day-label {
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.20em; text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 12px;
+    .day-strip .ds-day.today {
+      border: 1px solid var(--text);
     }
 
-    /* ── Capture screen (dark — only dark screen) ────────────── */
-    .view[data-view="capture"] { background: var(--dark-bg); }
+    /* ── Settings ─────────────────────────────────────────────── */
+    .setting-link {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 0; border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .setting-link .left {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .setting-link .left .top {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      font-weight: 700; letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .setting-link .left .val {
+      font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--text);
+    }
+    .setting-link .chev { color: var(--text-muted); font-size: 18px; }
+    .setting-link:first-of-type { border-top: 1px solid var(--border); }
+    .danger-link {
+      width: 100%; padding: 16px;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--error); text-align: center;
+      background: transparent;
+    }
+
+    /* Profile sub */
+    .avatar-circle {
+      width: 96px; height: 96px; border-radius: 50%;
+      border: 1px solid var(--text);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Sans', sans-serif; font-size: 32px; font-weight: 700;
+      color: var(--text); margin: 0 auto 12px auto;
+      overflow: hidden;
+    }
+    .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .change-photo {
+      display: block; text-align: center;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      font-weight: 700; letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--text); background: transparent;
+      width: 100%; padding: 8px; margin-bottom: 24px;
+    }
+
+    /* Connections sub */
+    .conn-card {
+      padding: 16px 0; border-top: 1px solid var(--border);
+    }
+    .conn-card:last-child { border-bottom: 1px solid var(--border); }
+    .conn-card .top {
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .conn-card .email { font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--text); margin-bottom: 6px; }
+    .conn-card .status {
+      display: inline-flex; gap: 6px; align-items: center;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--green);
+    }
+    .conn-card .status .greendot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+    .conn-card .meta {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--text-muted); margin: 8px 0 14px 0; letter-spacing: 0.06em;
+    }
+
+    /* Robin's Hours sub */
+    .hour-card {
+      padding: 18px 0; border-top: 1px solid var(--border);
+    }
+    .hour-card:last-of-type { border-bottom: 1px solid var(--border); }
+    .hour-card .top {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      font-weight: 700; letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .hour-card .val {
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: 'DM Sans', sans-serif; font-size: 22px; font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .hour-card .val .chev { color: var(--text-muted); font-size: 18px; }
+    .hour-card .copy { font-size: 13px; color: var(--text-sub); }
+
+    /* ── Capture overlay (dark) ───────────────────────────────── */
+    #capture-overlay {
+      position: fixed; inset: 0; background: #0A0A0A;
+      z-index: 200; display: flex; flex-direction: column;
+      padding: calc(var(--safe-top) + 24px) var(--pad-x) calc(var(--safe-bottom) + 24px) var(--pad-x);
+    }
+    .capture-top {
+      display: flex; justify-content: space-between; align-items: center;
+      color: #FFFFFF;
+    }
+    .capture-close {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.65); background: transparent;
+    }
     .capture-inner {
-      min-height: 100%;
-      padding: 32px var(--pad-x);
-      display: flex; flex-direction: column; align-items: center; text-align: center;
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 12px 0;
     }
     .capture-status {
-      margin-top: 16px;
       font-family: 'Space Mono', monospace; font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.22em; text-transform: uppercase;
-      color: var(--accent);
+      font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 24px;
     }
     .waveform {
       display: flex; align-items: center; justify-content: center; gap: 6px;
-      height: 100px; margin: 56px 0 40px 0; width: 100%;
+      height: 80px; margin: 8px 0 24px 0; width: 100%;
     }
-    .waveform .bar {
-      width: 4px; background: var(--accent);
-      border-radius: 2px; height: 12px;
-      transition: height 80ms ease;
-    }
+    .waveform .bar { width: 4px; background: var(--accent); border-radius: 2px; height: 12px; transition: height 80ms ease; }
     .capture-transcript {
-      flex: 1; width: 100%;
-      font-family: 'DM Sans', sans-serif; font-size: 22px; line-height: 1.35;
-      color: #FFFFFF; min-height: 100px;
-      display: flex; align-items: flex-start; justify-content: center;
-      padding: 0 8px;
+      width: 100%; min-height: 80px;
+      font-family: 'DM Sans', sans-serif; font-size: 22px; line-height: 1.4;
+      color: #FFFFFF;
     }
     .capture-transcript:empty::before {
-      content: 'Hold the button to start';
-      color: rgba(255,255,255,0.35);
-      font-size: 14px;
+      content: 'Hold the button to speak';
+      color: rgba(255,255,255,0.35); font-size: 14px;
     }
     .capture-chip {
       display: inline-flex; gap: 8px; align-items: center;
-      padding: 6px 12px;
-      border: 1px solid rgba(255,255,255,0.18);
-      border-radius: 999px;
+      padding: 6px 12px; border: 1px solid rgba(255,255,255,0.18);
       font-family: 'Space Mono', monospace; font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.18em; text-transform: uppercase;
+      font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
       color: rgba(255,255,255,0.6);
-      margin: 24px 0;
-      opacity: 0; transition: opacity 200ms ease;
+      margin: 16px 0; opacity: 0; transition: opacity 200ms ease;
     }
     .capture-chip.show { opacity: 1; }
     .capture-mic {
       width: 88px; height: 88px; border-radius: 50%;
-      background: var(--accent); color: #FFFFFF;
+      background: var(--accent); color: #0A0A0A;
       display: flex; align-items: center; justify-content: center;
-      font-size: 28px;
-      margin: 24px 0 0 0;
-      box-shadow: 0 8px 32px var(--accent-glow);
-      transition: transform 100ms ease;
+      font-size: 28px; margin-top: auto;
       position: relative;
     }
-    .capture-mic:active { transform: scale(0.94); }
     .capture-mic.listening::after {
       content: ''; position: absolute; inset: -8px;
       border-radius: 50%; border: 2px solid var(--accent);
       animation: pulse-ring 1.4s ease-out infinite;
     }
     @keyframes pulse-ring {
-      0%   { transform: scale(0.9); opacity: 1; }
+      0% { transform: scale(0.9); opacity: 1; }
       100% { transform: scale(1.6); opacity: 0; }
     }
-    .capture-hint {
-      margin-top: 16px;
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.18em; text-transform: uppercase;
-      color: rgba(255,255,255,0.35);
-    }
 
-    /* ── Settings ─────────────────────────────────────────────── */
-    .settings-profile {
-      display: flex; gap: 14px; align-items: center;
-      padding: 12px 0 24px 0;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
-    }
-    .settings-profile .avatar {
-      width: 52px; height: 52px; border-radius: 50%;
-      background: var(--surface); color: var(--text);
+    /* ── iOS-style permission modal ───────────────────────────── */
+    .modal-scrim {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 300;
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px; font-weight: 600;
-      overflow: hidden; flex-shrink: 0;
+      padding: var(--pad-x);
     }
-    .settings-profile .avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .settings-profile .info .name { font-size: 17px; font-weight: 600; color: var(--text); }
-    .settings-profile .info .sub { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
-    .conn-row, .link-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 0; border-bottom: 1px solid var(--border);
-      cursor: pointer;
+    .ios-card {
+      width: 100%; max-width: 280px;
+      background: #F2F2F2; border-radius: 14px;
+      overflow: hidden;
+      font-family: -apple-system, system-ui, sans-serif;
     }
-    .conn-row .left, .link-row .left { display: flex; gap: 12px; align-items: center; }
-    .conn-row .name, .link-row .name { font-size: 15px; color: var(--text); }
-    .conn-row .status-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--success);
+    .ios-card .body {
+      padding: 20px 16px 14px 16px; text-align: center;
     }
-    .conn-row.off .status-dot { background: var(--border); }
-    .link-row .chev { color: var(--text-faint); font-size: 16px; }
-    .version {
-      margin-top: 32px; padding: 16px 0 0 0;
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.20em; text-transform: uppercase;
-      color: var(--text-faint);
-      text-align: center;
+    .ios-card .body .t { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #000; }
+    .ios-card .body .m { font-size: 13px; color: #333; line-height: 1.4; }
+    .ios-card .actions { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #C7C7C7; }
+    .ios-card .actions button {
+      padding: 12px; font-size: 16px; color: #007AFF; background: transparent;
+      font-family: -apple-system, system-ui, sans-serif;
     }
+    .ios-card .actions button:first-child { color: #007AFF; border-right: 1px solid #C7C7C7; }
+    .ios-card .actions button.primary { font-weight: 600; }
 
     /* ── Toast ───────────────────────────────────────────────── */
     #toast {
@@ -662,302 +726,435 @@
       bottom: calc(var(--tabbar-h) + var(--addbar-h) + var(--safe-bottom) + 12px);
       left: 50%; transform: translateX(-50%) translateY(16px);
       padding: 10px 18px;
-      background: var(--black); color: #FFFFFF;
-      border-radius: 999px; font-size: 13px;
+      background: var(--text); color: #FFFFFF;
+      border-radius: 0; font-size: 13px;
       opacity: 0; pointer-events: none;
       transition: opacity 180ms ease, transform 180ms ease;
-      z-index: 200; max-width: 80vw; text-align: center;
+      z-index: 400; max-width: 80vw; text-align: center;
+      font-family: 'Space Mono', monospace; letter-spacing: 0.10em;
+      text-transform: uppercase;
     }
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
 
+<!-- ── STATUSBAR (always visible) ──────────────────────────────── -->
+<header class="statusbar">
+  <span id="clock" class="mono">7:42</span>
+  <span class="right">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+  </span>
+</header>
+
 <!-- ── ONBOARDING ──────────────────────────────────────────────── -->
-<section id="onboarding" class="ob">
-  <div class="ob-progress" id="ob-progress" aria-hidden="true"></div>
+<section id="onboarding">
 
-  <!-- 1: Launch -->
-  <div class="ob-step ob-launch active" data-step="1">
-    <div class="stretch"></div>
-    <div class="logo">Robin</div>
+  <!-- 1. Splash -->
+  <div class="ob-step ob-splash active" data-step="1">
+    <div class="wordmark">Robin</div>
     <div class="tag">A serious tool.</div>
-    <div class="stretch"></div>
-    <div class="ob-launch-buttons">
-      <button class="btn-primary" data-action="ob-next">Get started</button>
-      <button class="btn-ghost" data-action="ob-signin">Sign in</button>
-    </div>
   </div>
 
-  <!-- 2: Create Account -->
+  <!-- 2. Sign in -->
   <div class="ob-step" data-step="2">
-    <h2>Create account</h2>
-    <p class="sub">Robin keeps your data on this device. Email is for sync later.</p>
-    <div class="field">
-      <label>Email</label>
-      <input type="email" id="ob-email" placeholder="you@example.com" autocomplete="email" />
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" id="ob-password" placeholder="Choose a password" autocomplete="new-password" />
-    </div>
+    <div class="crumb"><span class="l">SIGN IN</span><span class="r">1/3</span></div>
+    <div class="divider"></div>
+    <h1>How do you prefer
+to sign in?</h1>
+    <button class="btn btn-outline" id="ob-google-btn"><span>G</span><span>Sign in with Google</span></button>
+    <div style="height:10px"></div>
+    <button class="btn btn-outline" id="ob-apple-btn"><span></span><span>Sign in with Apple</span></button>
     <div class="stretch"></div>
-    <button class="btn-primary" data-action="ob-next">Continue</button>
+    <button class="btn-link" id="ob-skip-signin">Sign in as Guest or Skip</button>
   </div>
 
-  <!-- 3: Build Profile -->
+  <!-- 3. Goal selection -->
   <div class="ob-step" data-step="3">
-    <h2>Your profile</h2>
-    <p class="sub">Robin will use this to address you and personalize briefs.</p>
-    <label for="ob-photo-input" class="photo-picker" id="ob-photo-picker">
-      <span id="ob-photo-placeholder">+</span>
-    </label>
-    <input type="file" id="ob-photo-input" accept="image/*" class="sr-only" />
-    <div class="name-row">
-      <div class="field">
-        <label>First</label>
-        <input type="text" id="ob-name" placeholder="Jane" autocomplete="given-name" />
-      </div>
-      <div class="field">
-        <label>Last</label>
-        <input type="text" id="ob-lastname" placeholder="Doe" autocomplete="family-name" />
-      </div>
+    <div class="crumb"><span class="l">SETUP</span><span class="r">1/4</span></div>
+    <div class="divider"></div>
+    <h1>What do you want
+Robin to help with?</h1>
+    <div class="goal-options" id="goal-options">
+      <button class="goal-option" data-goal="productive"><span>I want to be more productive</span><span class="check">✓</span></button>
+      <button class="goal-option" data-goal="remember"><span>I want to remember everything</span><span class="check">✓</span></button>
+      <button class="goal-option" data-goal="coordinate"><span>I want to coordinate calendars</span><span class="check">✓</span></button>
     </div>
     <div class="stretch"></div>
-    <button class="btn-primary" data-action="ob-next">Continue</button>
+    <button class="btn btn-filled btn-filled-mono hidden" id="ob-goal-next" data-action="ob-next">Next</button>
   </div>
 
-  <!-- 4: Add People -->
+  <!-- 4. Feature overview -->
   <div class="ob-step" data-step="4">
-    <h2>People</h2>
-    <p class="sub">Anyone Robin should know about — family, team, friends.</p>
-    <div class="people-list" id="ob-people-list"></div>
-    <div class="field">
-      <label>Name</label>
-      <input type="text" id="ob-person-name" placeholder="Their name" />
+    <div class="crumb"><span class="l">SETUP</span><span class="r">2/4</span></div>
+    <div class="divider"></div>
+    <h1>Great! I'll keep you
+on top of your life,
+all in 1 place.</h1>
+    <div class="feature-grid">
+      <div class="feature-tile"><span>Calendar</span><span class="check">✓</span></div>
+      <div class="feature-tile"><span>To-dos</span><span class="check">✓</span></div>
+      <div class="feature-tile"><span>Habits</span><span class="check">✓</span></div>
+      <div class="feature-tile"><span>Groceries</span><span class="check">✓</span></div>
+      <div class="feature-tile"><span>Notes</span><span class="check">✓</span></div>
+      <div class="feature-tile"><span>Weather</span><span class="check">✓</span></div>
     </div>
-    <div class="field">
-      <label>Relationship</label>
-      <input type="text" id="ob-person-rel" placeholder="Partner, mom, coworker..." />
-    </div>
-    <button class="add-person-btn" id="ob-add-person">+ Add person</button>
     <div class="stretch"></div>
-    <button class="btn-primary" data-action="ob-next">Continue</button>
+    <button class="btn btn-filled btn-filled-mono" data-action="ob-next">Next</button>
   </div>
 
-  <!-- 5: Connect Calendar -->
+  <!-- 5. Add calendars -->
   <div class="ob-step" data-step="5">
-    <h2>Connect a calendar</h2>
-    <p class="sub">Robin reads your calendar so the morning brief is accurate.</p>
-    <div class="calendar-card" id="ob-gcal">
-      <div class="logo-circle">G</div>
-      <div class="copy">
-        <div class="title">Google Calendar</div>
-        <div class="sub" id="ob-gcal-sub">Read events from your primary calendar</div>
-      </div>
-      <button class="connect" id="ob-gcal-btn">Connect</button>
+    <div class="crumb"><span class="l">SET UP CALENDARS</span><span class="r">2/4</span></div>
+    <div class="divider"></div>
+    <h1>Add your calendars</h1>
+    <div class="cal-tiles" id="cal-tiles">
+      <button class="cal-tile" data-cal="google"><span class="icon">G</span><span>Google</span></button>
+      <button class="cal-tile" data-cal="outlook"><span class="icon">O</span><span>Outlook</span></button>
+      <button class="cal-tile" data-cal="apple"><span class="icon"></span><span>Apple</span></button>
+      <button class="cal-tile" data-cal="imap"><span class="icon">@</span><span>iMap</span></button>
     </div>
-    <p class="sub" style="margin-top:12px;font-size:13px">You can skip this and connect later in Settings.</p>
+    <p class="sub">Connect your calendar to keep everything in sync.</p>
     <div class="stretch"></div>
-    <button class="btn-primary" data-action="ob-next">Continue</button>
+    <button class="btn btn-filled btn-filled-mono" data-action="ob-next">Tap to Select Calendars</button>
   </div>
 
-  <!-- 6: Set Hours -->
+  <!-- 6. Robin's Hours -->
   <div class="ob-step" data-step="6">
-    <h2>Robin's hours</h2>
-    <p class="sub">When should Robin work for you?</p>
-    <div class="hours-grid">
-      <div class="hours-row">
-        <div class="name"><span class="t">Morning brief</span><span class="s">Today's overview</span></div>
-        <input type="time" id="ob-hours-brief" value="07:00" />
+    <div class="crumb"><span class="l">ROBIN'S HOURS</span><span class="r">3/4</span></div>
+    <div class="divider"></div>
+    <h1>Tell Robin what you
+need and when</h1>
+    <div class="hours-rows">
+      <div class="hours-row-card" id="ob-hour-brief">
+        <span class="name">Morning Brief</span>
+        <span class="val"><span id="ob-brief-val" class="mono">7:00 AM</span><span class="chev">›</span></span>
       </div>
-      <div class="hours-row">
-        <div class="name"><span class="t">Evening digest</span><span class="s">What got done</span></div>
-        <input type="time" id="ob-hours-digest" value="17:45" />
+      <div class="time-wheel" id="ob-time-wheel">
+        <div class="col" id="wheel-hour"></div>
+        <div class="col" id="wheel-min"></div>
+        <div class="col" id="wheel-ap"></div>
       </div>
-      <div class="hours-row">
-        <div class="name"><span class="t">Quiet hours</span><span class="s">No more pings</span></div>
-        <input type="time" id="ob-hours-quiet" value="21:00" />
+      <div class="hours-row-card" id="ob-hour-digest">
+        <span class="name">Evening Recap</span>
+        <span class="val"><span id="ob-digest-val" class="mono">8:00 PM</span><span class="chev">›</span></span>
+      </div>
+      <div class="hours-row-card" id="ob-hour-quiet">
+        <span class="name">Quiet Hours</span>
+        <span class="val"><span id="ob-quiet-val" class="mono">10 PM – 7 AM</span><span class="chev">›</span></span>
       </div>
     </div>
     <div class="stretch"></div>
-    <button class="btn-primary" data-action="ob-next">Continue</button>
+    <button class="btn btn-filled btn-filled-mono" data-action="ob-next">Next</button>
   </div>
 
-  <!-- 7: Done -->
-  <div class="ob-step ob-done" data-step="7">
+  <!-- 7. Notifications -->
+  <div class="ob-step" data-step="7">
+    <div class="crumb"><span class="l">NOTIFICATIONS</span><span class="r">4/4</span></div>
+    <div class="divider"></div>
+    <h1>Allow notifications so
+Robin can nudge you.</h1>
+    <div class="notif-mock">
+      <div class="icon">R</div>
+      <div class="body">
+        <div class="t">Robin</div>
+        <div class="m">Team meeting in 10 min — conference room B</div>
+        <div class="meta">NOW</div>
+      </div>
+    </div>
     <div class="stretch"></div>
-    <div class="check">✓</div>
-    <h2>Robin is ready.</h2>
-    <p class="sub">Robin will check in tomorrow morning.</p>
-    <div class="stretch"></div>
-    <button class="btn-primary" data-action="ob-finish">Open Robin</button>
+    <button class="btn btn-filled btn-filled-mono" id="ob-notif-btn">Allow Notifications</button>
+    <div style="height:8px"></div>
+    <button class="btn-link" data-action="ob-next">Not now</button>
   </div>
+
+  <!-- 8. Ready -->
+  <div class="ob-step ob-ready" data-step="8">
+    <div class="stretch"></div>
+    <div class="crumb-label">Robin's Ready</div>
+    <div class="word">Robin</div>
+    <div class="copy">Congrats on setting up Robin, your new personal assistant.</div>
+    <button class="btn btn-filled btn-filled-mono" data-action="ob-finish">Open Robin</button>
+    <div class="stretch"></div>
+  </div>
+
 </section>
 
 <!-- ── APP ──────────────────────────────────────────────────────── -->
 <section id="app" class="hidden">
 
-  <header class="statusbar">
-    <span id="clock" class="mono">--:--</span>
-    <span class="right">
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-    </span>
-  </header>
-
+  <!-- TODAY -->
   <main class="view active" data-view="today">
     <div class="view-inner with-addbar">
       <div class="today-weather-row">
         <div class="today-weather">
-          <div class="hilo" id="weather-hilo">--° / --°</div>
+          <div class="hilo" id="weather-hilo">HI --°  L --°</div>
           <div class="cond" id="weather-cond">Loading</div>
         </div>
-        <div class="today-date-vert" id="today-date-vert">--- ---</div>
+        <div class="today-date-vert" id="today-date-vert">--/--</div>
       </div>
-
       <div class="today-day-row">
         <div class="today-day" id="today-day">today</div>
-        <button class="today-brief-play" id="today-brief-play" aria-label="Play brief">▶</button>
+        <button class="play-chip" id="today-brief-play"><span class="tri">▷</span><span class="mono" id="brief-duration">0:30</span></button>
       </div>
+      <p class="today-brief" id="today-brief-text">Robin is preparing your brief…</p>
+      <div class="divider"></div>
 
-      <div class="today-brief" id="today-brief-text">Robin is preparing your brief…</div>
-
-      <div class="section">
+      <div class="section" style="margin-top:20px">
         <div class="label">Schedule</div>
-        <div class="section-divider"></div>
         <div id="schedule-list"></div>
       </div>
 
       <div class="section">
         <div class="label">To-do</div>
-        <div class="section-divider"></div>
         <div id="todo-list"></div>
       </div>
     </div>
   </main>
 
-  <main class="view" data-view="lists">
+  <!-- CHAT -->
+  <main class="view" data-view="chat">
     <div class="view-inner with-addbar">
-      <div class="label">Lists</div>
-      <h1 class="screen-title">Your buckets.</h1>
+      <div class="chat-header"><span class="greendot"></span>Robin · Online</div>
       <div class="divider"></div>
-      <div class="bucket-row" data-bucket="today">
-        <span class="name">Today</span>
-        <span class="meta"><span class="count" id="bucket-today">0</span><span class="chev">›</span></span>
-      </div>
-      <div class="bucket-row" data-bucket="soon">
-        <span class="name">Soon</span>
-        <span class="meta"><span class="count" id="bucket-soon">0</span><span class="chev">›</span></span>
-      </div>
-      <div class="bucket-row" data-bucket="someday">
-        <span class="name">Someday</span>
-        <span class="meta"><span class="count" id="bucket-someday">0</span><span class="chev">›</span></span>
-      </div>
-
-      <div class="section" style="margin-top:32px">
-        <div class="label">Containers</div>
-        <div class="section-divider"></div>
-        <div id="containers-list"></div>
-        <button class="new-container-btn" id="new-container-btn">+ New container</button>
-      </div>
+      <div class="chat-list" id="chat-list"></div>
     </div>
   </main>
 
-  <main class="view" data-view="calendar">
+  <!-- LISTS -->
+  <main class="view" data-view="lists">
     <div class="view-inner">
-      <div class="label">Calendar</div>
-      <h1 class="month-title" id="cal-month">---</h1>
-      <div class="week-strip" id="week-strip"></div>
-      <div class="day-label" id="cal-day-label">---</div>
-      <div id="cal-events"></div>
-    </div>
-  </main>
-
-  <main class="view" data-view="capture">
-    <div class="capture-inner">
-      <div class="capture-status">Robin is listening</div>
-      <div class="waveform" id="waveform">
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="crumb"><span class="l" id="lists-crumb">10 / LISTS</span><span class="r" id="lists-total">↓ TOTAL 0</span></div>
+      <h1 class="screen-title">Lists</h1>
+      <div class="seg-control">
+        <button class="active" data-seg="grid">GRID</button>
+        <button data-seg="list">LIST</button>
       </div>
-      <div class="capture-transcript" id="capture-transcript"></div>
-      <div class="capture-chip" id="capture-chip">Pressed · Tagged</div>
-      <button class="capture-mic" id="capture-mic" aria-label="Hold to speak">●</button>
-      <div class="capture-hint">Hold to speak</div>
+      <div id="lists-rows"></div>
+      <div style="height:16px"></div>
+      <button class="btn btn-outline btn-outline-mono" id="new-list-btn">+ Add a list</button>
     </div>
   </main>
 
+  <!-- CALENDAR -->
+  <main class="view" data-view="calendar">
+    <div class="view-inner with-addbar">
+      <div class="crumb"><span class="l" id="cal-crumb">12 / CALENDAR</span><span class="r" id="cal-meta">↓ MONTH --</span></div>
+      <h1 class="screen-title" id="cal-title">May</h1>
+      <div class="seg-control" id="cal-seg">
+        <button class="active" data-seg="month">MONTH</button>
+        <button data-seg="day">DAY</button>
+      </div>
+      <div id="cal-body"></div>
+    </div>
+  </main>
+
+  <!-- SETTINGS -->
   <main class="view" data-view="settings">
     <div class="view-inner">
-      <div class="label">Settings</div>
-      <h1 class="screen-title">Robin.</h1>
+      <div class="crumb"><span class="l">14 / SETTINGS</span><span class="r">↓ TOTAL 7</span></div>
+      <h1 class="screen-title">Settings</h1>
 
-      <div class="settings-profile">
-        <div class="avatar" id="settings-avatar"><span id="settings-avatar-letter">R</span></div>
-        <div class="info">
-          <div class="name" id="settings-name">Robin user</div>
-          <div class="sub" id="settings-sub">Tap to edit profile</div>
-        </div>
+      <div class="setting-link" data-go="profile">
+        <div class="left"><span class="top">Profile</span><span class="val" id="set-profile-name">Robin User</span></div>
+        <span class="chev">›</span>
+      </div>
+      <div class="setting-link" data-go="connections">
+        <div class="left"><span class="top">Connections</span><span class="val" id="set-conn-summary">Cal · Mail</span></div>
+        <span class="chev">›</span>
+      </div>
+      <div class="setting-link" data-go="hours">
+        <div class="left"><span class="top">Robin's Hours</span><span class="val" id="set-hours-summary">7 AM – 9 PM</span></div>
+        <span class="chev">›</span>
+      </div>
+      <div class="setting-link">
+        <div class="left"><span class="top">About Robin</span><span class="val">v0.3</span></div>
+        <span class="chev">›</span>
+      </div>
+      <div class="setting-link" data-link="terms">
+        <div class="left"><span class="top">Legal</span><span class="val">Terms of Use</span></div>
+        <span class="chev">›</span>
+      </div>
+      <div class="setting-link" data-link="privacy">
+        <div class="left"><span class="top">Legal</span><span class="val">Privacy Policy</span></div>
+        <span class="chev">›</span>
+      </div>
+      <div class="setting-link" data-link="contact">
+        <div class="left"><span class="top">Help</span><span class="val">Contact Us</span></div>
+        <span class="chev">›</span>
       </div>
 
-      <div class="section">
-        <div class="label">Connections</div>
-        <div class="section-divider"></div>
-        <div class="conn-row" id="conn-gcal"><div class="left"><span class="name">Google Calendar</span></div><span class="status-dot"></span></div>
-        <div class="conn-row" id="conn-gmail"><div class="left"><span class="name">Gmail</span></div><span class="status-dot"></span></div>
-        <div class="conn-row" id="conn-contacts"><div class="left"><span class="name">Contacts</span></div><span class="status-dot"></span></div>
-      </div>
-
-      <div class="section">
-        <div class="label">Preferences</div>
-        <div class="section-divider"></div>
-        <div class="link-row" data-link="hours"><div class="left"><span class="name">Robin's hours</span></div><span class="chev">›</span></div>
-        <div class="link-row" data-link="people"><div class="left"><span class="name">People</span></div><span class="chev">›</span></div>
-        <div class="link-row" data-link="notifications"><div class="left"><span class="name">Notifications</span></div><span class="chev">›</span></div>
-      </div>
-
-      <div class="version">Robin v3.0.0</div>
+      <div style="height:24px"></div>
+      <button class="btn btn-outline btn-outline-mono" id="signout-btn">Sign out</button>
+      <button class="danger-link" id="delete-btn">Delete account</button>
     </div>
   </main>
 
+  <!-- Bottom add bar -->
   <div class="addbar" id="addbar">
-    <input type="text" id="addbar-input" placeholder="+ Add new" />
-    <button class="mic" id="addbar-mic" aria-label="Voice input">●</button>
+    <input type="text" id="addbar-input" placeholder="＋ Add item" />
+    <button class="mic-btn" id="addbar-mic" aria-label="Voice input">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="9" y="3" width="6" height="12" rx="3"/>
+        <path d="M5 11v1a7 7 0 0 0 14 0v-1"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+      </svg>
+    </button>
   </div>
 
+  <!-- Tabbar -->
   <nav class="tabbar">
-    <button data-tab="today" class="active"><span class="tab-icon">○</span>Today</button>
-    <button data-tab="lists"><span class="tab-icon">≡</span>Lists</button>
-    <button data-tab="capture"><span class="tab-icon">●</span>Capture</button>
-    <button data-tab="calendar"><span class="tab-icon">▤</span>Calendar</button>
-    <button data-tab="settings"><span class="tab-icon">⚙</span>Settings</button>
+    <button data-tab="today" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="6.7" y2="6.7"/><line x1="17.3" y1="17.3" x2="19.07" y2="19.07"/><line x1="4.93" y1="19.07" x2="6.7" y2="17.3"/><line x1="17.3" y1="6.7" x2="19.07" y2="4.93"/></svg>
+      Today
+    </button>
+    <button data-tab="chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M4 5h16v11h-8l-4 4v-4H4z"/></svg>
+      Chat
+    </button>
+    <button data-tab="lists">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><line x1="7" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="20" y2="12"/><line x1="7" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="0.6" fill="currentColor"/><circle cx="4" cy="12" r="0.6" fill="currentColor"/><circle cx="4" cy="18" r="0.6" fill="currentColor"/></svg>
+      Lists
+    </button>
+    <button data-tab="calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><rect x="3" y="5" width="18" height="16"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+      Calendar
+    </button>
+    <button data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><circle cx="12" cy="9" r="4"/><path d="M4 21v-1c0-3 3.5-5 8-5s8 2 8 5v1"/></svg>
+      Profile
+    </button>
   </nav>
 </section>
 
-<!-- ── LIST DETAIL ──────────────────────────────────────────────── -->
-<section id="list-detail" class="hidden">
-  <div class="list-detail-inner">
-    <div class="back-row" id="list-back">
-      <span class="arrow">‹</span>
-      <span class="label" id="list-back-label">Back</span>
-    </div>
-    <div class="label" id="list-detail-section">List</div>
-    <h1 class="screen-title" id="list-detail-title">0 items</h1>
-    <div id="list-detail-rows"></div>
+<!-- ── LIST DETAIL ─────────────────────────────────────────────── -->
+<section id="list-detail" class="subscreen hidden">
+  <div class="subscreen-inner" style="padding-bottom: calc(var(--addbar-h) + 16px)">
+    <div class="back-row" id="list-back"><span class="arrow">‹</span><span>BACK</span></div>
+    <div class="crumb"><span class="l" id="ld-crumb">10 / LISTS</span><span class="r" id="ld-count">0 ITEMS</span></div>
+    <h1 class="screen-title" id="ld-title">List</h1>
+    <p class="today-brief" id="ld-sub">items</p>
+    <div id="ld-rows"></div>
   </div>
   <div class="addbar">
-    <input type="text" id="list-detail-input" placeholder="+ Add item" />
-    <button class="mic" id="list-detail-mic" aria-label="Voice input">●</button>
+    <input type="text" id="list-detail-input" placeholder="＋ Add new" />
+    <button class="mic-btn" id="list-detail-mic" aria-label="Voice input">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="9" y="3" width="6" height="12" rx="3"/>
+        <path d="M5 11v1a7 7 0 0 0 14 0v-1"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+      </svg>
+    </button>
   </div>
 </section>
+
+<!-- ── PROFILE ─────────────────────────────────────────────────── -->
+<section id="profile-screen" class="subscreen hidden">
+  <div class="subscreen-inner">
+    <div class="back-row" data-back="settings"><span class="arrow">‹</span><span>BACK</span></div>
+    <h1 class="screen-title">Profile.</h1>
+    <div class="avatar-circle" id="profile-avatar"><span id="profile-letter">M</span></div>
+    <label for="profile-photo-input" class="change-photo">Change Photo</label>
+    <input type="file" id="profile-photo-input" accept="image/*" class="sr-only" />
+    <div class="field">
+      <label>First Name</label>
+      <input type="text" id="profile-first" placeholder="Jane" />
+    </div>
+    <div class="field">
+      <label>Last Name</label>
+      <input type="text" id="profile-last" placeholder="Doe" />
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="profile-email" placeholder="you@example.com" />
+    </div>
+    <button class="btn btn-filled btn-filled-mono" id="profile-save-btn">Save</button>
+  </div>
+</section>
+
+<!-- ── CONNECTIONS ─────────────────────────────────────────────── -->
+<section id="connections-screen" class="subscreen hidden">
+  <div class="subscreen-inner">
+    <div class="back-row" data-back="settings"><span class="arrow">‹</span><span>BACK</span></div>
+    <h1 class="screen-title">Connections</h1>
+    <p class="today-brief">What Robin can do — and can't.</p>
+
+    <div class="conn-card" id="cc-cal">
+      <div class="top"><span>Calendar</span><span id="cc-cal-status" class="status"><span class="greendot"></span>Connected</span></div>
+      <div class="email" id="cc-cal-email">—</div>
+      <div class="meta">Read + write events · Last sync 7:42 AM</div>
+      <button class="btn btn-outline btn-outline-mono" id="cc-cal-btn">Disconnect</button>
+    </div>
+
+    <div class="conn-card" id="cc-mail">
+      <div class="top"><span>Mail</span><span id="cc-mail-status" class="status"><span class="greendot"></span>Connected</span></div>
+      <div class="email" id="cc-mail-email">—</div>
+      <div class="meta">Read inbox · Last sync 7:42 AM</div>
+      <button class="btn btn-outline btn-outline-mono" id="cc-mail-btn">Disconnect</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── ROBIN'S HOURS ───────────────────────────────────────────── -->
+<section id="hours-screen" class="subscreen hidden">
+  <div class="subscreen-inner">
+    <div class="back-row" data-back="settings"><span class="arrow">‹</span><span>BACK</span></div>
+    <h1 class="screen-title">Robin's hours.</h1>
+    <p class="today-brief">When Robin shows up.</p>
+
+    <div class="hour-card">
+      <div class="top">Morning Brief</div>
+      <div class="val"><span id="hr-brief" class="mono">7:00 AM</span><span class="chev">›</span></div>
+      <div class="copy">Today's outline before you start.</div>
+    </div>
+    <div class="hour-card">
+      <div class="top">Evening Digest</div>
+      <div class="val"><span id="hr-digest" class="mono">9:00 PM</span><span class="chev">›</span></div>
+      <div class="copy">A quiet wrap-up. What landed.</div>
+    </div>
+    <div class="hour-card">
+      <div class="top">Quiet Hours</div>
+      <div class="val"><span id="hr-quiet" class="mono">10 PM – 7 AM</span><span class="chev">›</span></div>
+      <div class="copy">Robin won't reach out.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CAPTURE OVERLAY ─────────────────────────────────────────── -->
+<section id="capture-overlay" class="hidden">
+  <div class="capture-top">
+    <button class="capture-close" id="capture-close">Close</button>
+    <span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.18em;color:rgba(255,255,255,0.65);">Capture</span>
+    <span style="width:48px"></span>
+  </div>
+  <div class="capture-inner">
+    <div class="capture-status">Robin is listening</div>
+    <div class="waveform" id="waveform">
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    </div>
+    <div class="capture-transcript" id="capture-transcript"></div>
+    <div class="capture-chip" id="capture-chip">Pressed · Tagged</div>
+    <button class="capture-mic" id="capture-mic" aria-label="Hold to speak">●</button>
+  </div>
+</section>
+
+<!-- ── iOS PERMISSION MODAL ────────────────────────────────────── -->
+<div class="modal-scrim hidden" id="ios-perm-modal">
+  <div class="ios-card">
+    <div class="body">
+      <div class="t">"Robin" Wants to Use<br>"google.com" to Sign In</div>
+      <div class="m">This allows the app and website to share information about you.</div>
+    </div>
+    <div class="actions">
+      <button id="ios-deny">Don't Allow</button>
+      <button id="ios-allow" class="primary">Continue</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -968,58 +1165,58 @@
   // ── State + persistence ───────────────────────────────────────
   var DEFAULT_STATE = {
     onboarded: false,
-    profile: { name: '', lastname: '', photo: null, email: '' },
-    people: [],
-    hours: { brief: '07:00', digest: '17:45', quiet: '21:00' },
-    connections: { calendar: false, gmail: false, contacts: false },
+    profile: { first: '', last: '', photo: null, email: '' },
+    goals: [],
+    hours: { brief: '07:00', digest: '20:00', quiet: '22:00' },
+    connections: { calendar: false, mail: false, contacts: false },
     schedule: [],
     todos: [],
     containers: [
-      { id: 'inbox', name: 'Inbox' },
-      { id: 'work',  name: 'Work' },
-      { id: 'home',  name: 'Home' }
+      { id: 'inbox',     name: 'Inbox' },
+      { id: 'groceries', name: 'Groceries' },
+      { id: 'home',      name: 'Home' }
     ],
     brief: '',
     weather: null,
+    chat: [],
     activeList: null,
     activeListType: null
   };
-
   var STATE_KEY = 'robin-state-v1';
   var state;
   try {
     var raw = localStorage.getItem(STATE_KEY);
     state = raw ? Object.assign({}, DEFAULT_STATE, JSON.parse(raw)) : Object.assign({}, DEFAULT_STATE);
-  } catch (e) {
-    state = Object.assign({}, DEFAULT_STATE);
-  }
-  function persist() {
-    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {}
-  }
+    // Ensure nested defaults exist after migration
+    state.profile     = Object.assign({}, DEFAULT_STATE.profile, state.profile || {});
+    state.hours       = Object.assign({}, DEFAULT_STATE.hours, state.hours || {});
+    state.connections = Object.assign({}, DEFAULT_STATE.connections, state.connections || {});
+    if (!Array.isArray(state.goals)) state.goals = [];
+    if (!Array.isArray(state.chat))  state.chat  = [];
+  } catch (e) { state = Object.assign({}, DEFAULT_STATE); }
+  function persist() { try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {} }
   function uid() { return Math.random().toString(36).slice(2, 10); }
 
   // ── DOM helpers ───────────────────────────────────────────────
-  function $(sel, root) { return (root || document).querySelector(sel); }
-  function $$(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
-  function el(tag, props, children) {
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.from((r || document).querySelectorAll(s)); }
+  function el(tag, props, kids) {
     var n = document.createElement(tag);
     if (props) Object.keys(props).forEach(function(k){
       if (k === 'class') n.className = props[k];
       else if (k === 'text') n.textContent = props[k];
+      else if (k === 'html') n.innerHTML = props[k];
       else if (k.indexOf('on') === 0 && typeof props[k] === 'function') n.addEventListener(k.slice(2).toLowerCase(), props[k]);
-      else if (k === 'data') Object.keys(props.data).forEach(function(d){ n.dataset[d] = props.data[d]; });
       else n.setAttribute(k, props[k]);
     });
-    (children || []).forEach(function(c){ if (c) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    (kids || []).forEach(function(c){ if (c != null) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
     return n;
   }
 
   // ── Toast ─────────────────────────────────────────────────────
   var toastTimer = null;
   function toast(msg) {
-    var t = $('#toast');
-    t.textContent = msg;
-    t.classList.add('show');
+    var t = $('#toast'); t.textContent = msg; t.classList.add('show');
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
   }
@@ -1027,135 +1224,118 @@
   // ── Service worker ────────────────────────────────────────────
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('/sw.js').catch(function(){ /* no SW yet — fine */ });
+      navigator.serviceWorker.register('/sw.js').catch(function(){});
     });
   }
 
   // ── Onboarding ────────────────────────────────────────────────
-  var OB_STEPS = 7;
+  var OB_STEPS = 8;
   var obStep = 1;
-  var obPeopleBuf = [];
-
-  function renderObProgress() {
-    var p = $('#ob-progress');
-    p.innerHTML = '';
-    for (var i = 1; i <= OB_STEPS; i++) {
-      var s = document.createElement('span');
-      s.className = 'seg' + (i <= obStep ? ' done' : '');
-      p.appendChild(s);
-    }
-  }
   function showObStep(n) {
     obStep = n;
     $$('.ob-step').forEach(function(s){ s.classList.remove('active'); });
     var cur = $('.ob-step[data-step="' + n + '"]');
     if (cur) cur.classList.add('active');
-    renderObProgress();
   }
-  function obNext() {
-    if (obStep === 2) {
-      var em = $('#ob-email').value.trim();
-      var pw = $('#ob-password').value;
-      if (!em) { toast('Email please'); return; }
-      if (!pw) { toast('Password please'); return; }
-      state.profile.email = em;
-    }
-    if (obStep === 3) {
-      var nm = $('#ob-name').value.trim();
-      var ln = $('#ob-lastname') ? $('#ob-lastname').value.trim() : '';
-      if (!nm) { toast('What should Robin call you?'); return; }
-      state.profile.name = nm;
-      state.profile.lastname = ln;
-    }
-    if (obStep === 4) {
-      state.people = obPeopleBuf.slice();
-    }
-    if (obStep === 6) {
-      state.hours = {
-        brief:  $('#ob-hours-brief').value  || '07:00',
-        digest: $('#ob-hours-digest').value || '17:45',
-        quiet:  $('#ob-hours-quiet').value  || '21:00'
-      };
-    }
-    persist();
-    if (obStep < OB_STEPS) showObStep(obStep + 1);
-  }
+  function obNext() { if (obStep < OB_STEPS) showObStep(obStep + 1); }
   function obFinish() {
-    state.onboarded = true;
-    persist();
+    state.onboarded = true; persist();
     $('#onboarding').classList.add('hidden');
     $('#app').classList.remove('hidden');
     mountApp();
   }
-  function renderObPeople() {
-    var list = $('#ob-people-list');
-    list.innerHTML = '';
-    obPeopleBuf.forEach(function(p, i){
-      var row = el('div', { class: 'people-row' }, [
-        el('div', { class: 'avatar', text: (p.name || '?').charAt(0).toUpperCase() }),
-        el('div', { class: 'info' }, [
-          el('div', { class: 'name', text: p.name }),
-          el('div', { class: 'rel',  text: p.relationship || '—' })
-        ]),
-        el('button', { class: 'rm', text: '×', onclick: function(){ obPeopleBuf.splice(i,1); renderObPeople(); } })
-      ]);
-      list.appendChild(row);
+
+  // Splash auto-advance + tap
+  setTimeout(function(){ if (obStep === 1) showObStep(2); }, 2200);
+  $('.ob-splash').addEventListener('click', function(){ if (obStep === 1) showObStep(2); });
+
+  // Sign in (shows iOS modal, then advances)
+  function openIosPerm() { $('#ios-perm-modal').classList.remove('hidden'); }
+  function closeIosPerm() { $('#ios-perm-modal').classList.add('hidden'); }
+  $('#ob-google-btn').addEventListener('click', openIosPerm);
+  $('#ob-apple-btn').addEventListener('click', function(){
+    // No iOS dialog for Apple flow in this demo — straight through.
+    state.profile.email = state.profile.email || 'guest@apple.com';
+    persist(); obNext();
+  });
+  $('#ob-skip-signin').addEventListener('click', function(){
+    state.profile.email = state.profile.email || 'guest@robin.app';
+    persist(); obNext();
+  });
+  $('#ios-deny').addEventListener('click', function(){ closeIosPerm(); toast('Sign-in cancelled'); });
+  $('#ios-allow').addEventListener('click', function(){
+    closeIosPerm();
+    state.profile.email = state.profile.email || 'guest@google.com';
+    persist(); obNext();
+  });
+
+  // Goal selection
+  $$('.goal-option').forEach(function(b){
+    b.addEventListener('click', function(){
+      b.classList.toggle('selected');
+      var sel = $$('.goal-option.selected').map(function(x){ return x.dataset.goal; });
+      state.goals = sel; persist();
+      $('#ob-goal-next').classList.toggle('hidden', sel.length === 0);
+    });
+  });
+
+  // Calendar tile selection (multi)
+  $$('.cal-tile').forEach(function(t){
+    t.addEventListener('click', function(){
+      t.classList.toggle('selected');
+      var any = $$('.cal-tile.selected').length > 0;
+      if (any) state.connections.calendar = true;
+    });
+  });
+
+  // Time wheel — visual only; advancing keeps current state values
+  function fillWheel(colId, items, initialIdx) {
+    var c = $(colId);
+    c.innerHTML = '';
+    items.forEach(function(v, i){
+      var s = document.createElement('span');
+      s.textContent = v;
+      if (i === initialIdx) s.classList.add('cur');
+      c.appendChild(s);
     });
   }
+  var hours12 = [];
+  for (var h = 1; h <= 12; h++) hours12.push(h);
+  var mins = [];
+  for (var m = 0; m < 60; m++) mins.push(m < 10 ? '0' + m : '' + m);
+  fillWheel('#wheel-hour', hours12, 6);
+  fillWheel('#wheel-min', mins, 0);
+  fillWheel('#wheel-ap', ['AM','PM'], 0);
 
-  $$('button[data-action="ob-next"]').forEach(function(b){ b.addEventListener('click', obNext); });
+  // Notifications
+  $('#ob-notif-btn').addEventListener('click', function(){
+    if ('Notification' in window) {
+      try {
+        Notification.requestPermission().then(function(p){
+          toast(p === 'granted' ? 'Notifications on' : 'Notifications off');
+          obNext();
+        });
+      } catch (e) { obNext(); }
+    } else { obNext(); }
+  });
+
+  // Generic next / finish bindings
+  $$('button[data-action="ob-next"], .btn-link[data-action="ob-next"]').forEach(function(b){
+    b.addEventListener('click', obNext);
+  });
   $('button[data-action="ob-finish"]').addEventListener('click', obFinish);
-  var signinBtn = $('button[data-action="ob-signin"]');
-  if (signinBtn) signinBtn.addEventListener('click', function(){ toast('Sign in — coming soon'); });
-
-  $('#ob-photo-input').addEventListener('change', function(e){
-    var f = e.target.files && e.target.files[0];
-    if (!f) return;
-    var rdr = new FileReader();
-    rdr.onload = function(ev){
-      state.profile.photo = ev.target.result;
-      var picker = $('#ob-photo-picker');
-      picker.innerHTML = '';
-      var im = document.createElement('img');
-      im.src = ev.target.result;
-      picker.appendChild(im);
-      persist();
-    };
-    rdr.readAsDataURL(f);
-  });
-
-  $('#ob-add-person').addEventListener('click', function(){
-    var nm = $('#ob-person-name').value.trim();
-    var rl = $('#ob-person-rel').value.trim();
-    if (!nm) { toast('Name please'); return; }
-    obPeopleBuf.push({ name: nm, relationship: rl });
-    $('#ob-person-name').value = '';
-    $('#ob-person-rel').value = '';
-    renderObPeople();
-  });
-
-  $('#ob-gcal-btn').addEventListener('click', function(){
-    state.connections.calendar = true;
-    $('#ob-gcal').classList.add('connected');
-    $('#ob-gcal-btn').textContent = 'Connected';
-    $('#ob-gcal-sub').textContent = 'Reading from primary calendar';
-    persist();
-    toast('Calendar connected (demo)');
-  });
 
   // ── Clock ─────────────────────────────────────────────────────
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
   function fmtTime12(d) {
-    var h = d.getHours();
-    var m = d.getMinutes();
+    var h = d.getHours(); var m = d.getMinutes();
     var ap = h >= 12 ? 'PM' : 'AM';
     h = h % 12; if (h === 0) h = 12;
-    return h + ':' + pad(m) + ' ' + ap;
+    return h + ':' + pad(m);
   }
   function tickClock() {
-    var now = new Date();
     var c = $('#clock');
-    if (c) c.textContent = fmtTime12(now);
+    if (c) c.textContent = fmtTime12(new Date());
   }
 
   // ── Weather ───────────────────────────────────────────────────
@@ -1169,15 +1349,14 @@
       fetch('/api/weather?lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lon))
         .then(function(r){ return r.json(); })
         .then(function(data){
-          if (!data || !data.main) { setUI('--° / --°', 'Offline'); return; }
+          if (!data || !data.main) { setUI('HI --°  L --°', 'Offline'); return; }
           var hi = Math.round(data.main.temp_max || data.main.temp || 0);
           var lo = Math.round(data.main.temp_min || data.main.temp || 0);
           var cond = (data.weather && data.weather[0] && data.weather[0].main) || '—';
-          setUI(hi + '° / ' + lo + '°', cond);
-          state.weather = { hi: hi, lo: lo, cond: cond, ts: Date.now() };
-          persist();
+          setUI('HI ' + hi + '°  L ' + lo + '°', cond);
+          state.weather = { hi: hi, lo: lo, cond: cond, ts: Date.now() }; persist();
         })
-        .catch(function(){ setUI('--° / --°', 'Offline'); });
+        .catch(function(){ setUI('HI --°  L --°', 'Offline'); });
     };
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -1185,50 +1364,49 @@
         function(){ go(34.0522, -118.2437); },
         { timeout: 4000, maximumAge: 600000 }
       );
-    } else {
-      go(34.0522, -118.2437);
-    }
+    } else go(34.0522, -118.2437);
   }
 
-  // ── Today render ──────────────────────────────────────────────
-  var WEEKDAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-  var WEEKDAYS_FULL = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
-  var MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-  var MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  // ── Date helpers ──────────────────────────────────────────────
+  var DOW_S = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  var DOW_F = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+  var MON_F = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+  // ── Today render ──────────────────────────────────────────────
   function renderToday() {
     var now = new Date();
-    var dayName = WEEKDAYS_FULL[now.getDay()];
-    $('#today-day').textContent = dayName.toLowerCase();
-    $('#today-date-vert').textContent = MONTHS[now.getMonth()] + ' ' + now.getDate();
+    $('#today-day').textContent = DOW_F[now.getDay()].charAt(0) + DOW_F[now.getDay()].slice(1).toLowerCase();
+    $('#today-date-vert').textContent = pad(now.getMonth() + 1) + '/' + pad(now.getDate());
 
-    var sched = $('#schedule-list');
-    sched.innerHTML = '';
+    var sched = $('#schedule-list'); sched.innerHTML = '';
     if (!state.schedule.length) {
-      sched.appendChild(el('div', { class: 'empty', text: 'Nothing scheduled.' }));
+      var empty = el('div', { class: 'empty' }, [
+        el('div', { class: 'empty-copy', text: 'Nothing on today. A clean canvas. Capture something or check back after the morning brief.' })
+      ]);
+      sched.appendChild(empty);
     } else {
-      state.schedule.slice().sort(function(a,b){
-        return (a.time || '').localeCompare(b.time || '');
-      }).forEach(function(s){
-        sched.appendChild(el('div', { class: 'row' }, [
-          el('span', { class: 'time mono', text: s.time || '--:--' }),
-          el('span', { class: 'row-label', text: s.label || '' }),
-          el('span', { class: 'row-icon', text: s.icon || '•' })
-        ]));
-      });
+      state.schedule.slice().sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); })
+        .forEach(function(s){
+          sched.appendChild(el('div', { class: 'row' }, [
+            el('span', { class: 'time mono', text: formatTimeReadable(s.time) }),
+            el('span', { class: 'row-label', text: s.label || '' }),
+            el('span', { class: 'row-icon', text: s.icon || '·' })
+          ]));
+        });
     }
 
-    var td = $('#todo-list');
-    td.innerHTML = '';
+    var td = $('#todo-list'); td.innerHTML = '';
     var todayTodos = state.todos.filter(function(t){ return t.bucket !== 'soon' && t.bucket !== 'someday'; });
     if (!todayTodos.length) {
-      td.appendChild(el('div', { class: 'empty', text: 'Inbox zero.' }));
+      td.appendChild(el('div', { class: 'empty' }, [
+        el('div', { class: 'empty-copy', text: 'Inbox zero. Add what\'s next.' })
+      ]));
     } else {
       todayTodos.forEach(function(t){
         var row = el('div', { class: 'row' + (t.done ? ' done' : '') }, [
           el('span', { class: 'check' }),
           el('span', { class: 'row-label', text: t.label }),
-          el('span', { class: 'row-icon', text: t.icon || '•' })
+          el('span', { class: 'row-icon', text: t.icon || '·' })
         ]);
         row.addEventListener('click', function(){ toggleTodo(t.id); });
         td.appendChild(row);
@@ -1236,9 +1414,19 @@
     }
   }
 
+  function formatTimeReadable(t) {
+    if (!t) return '--:--';
+    var parts = t.split(':');
+    var h = parseInt(parts[0], 10); var m = parseInt(parts[1] || '0', 10);
+    var ap = h >= 12 ? 'pm' : 'am';
+    h = h % 12; if (h === 0) h = 12;
+    if (m === 0) return h + ap;
+    return h + ':' + pad(m) + ap;
+  }
+
   // ── Brief generation ──────────────────────────────────────────
   function buildBriefPrompt() {
-    var name = state.profile.name || 'friend';
+    var name = state.profile.first || 'friend';
     var sched = state.schedule.map(function(s){ return '- ' + s.time + ' ' + s.label; }).join('\n') || '(no events)';
     var todos = state.todos.filter(function(t){return !t.done && t.bucket!=='soon'&&t.bucket!=='someday';})
       .map(function(t){ return '- ' + t.label; }).join('\n') || '(none)';
@@ -1246,30 +1434,21 @@
     return 'Schedule:\n' + sched + '\n\nTo-do:\n' + todos + '\n\nWeather: ' + w + '\n\nName: ' + name;
   }
   function generateBrief() {
-    var sys = "You are Robin, a serious tool. Write a 2-3 sentence morning brief addressed to the user by first name. Be terse, useful, no filler, no emoji, no exclamation marks. Mention the most pressing schedule item and one to-do if relevant. If nothing is scheduled, say so plainly and suggest one thing.";
+    var sys = "You are Robin, a serious tool. Write a 2-3 sentence morning brief addressed to the user by first name. Be terse, useful, no filler, no emoji, no exclamation marks.";
     $('#today-brief-text').textContent = 'Robin is preparing your brief…';
     fetch('/api/claude', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system: sys,
-        max_tokens: 240,
-        messages: [{ role: 'user', content: buildBriefPrompt() }]
-      })
+      body: JSON.stringify({ system: sys, max_tokens: 240, messages: [{ role: 'user', content: buildBriefPrompt() }] })
     }).then(function(r){ return r.json(); })
       .then(function(data){
         var txt = (data && data.content && data.content[0] && data.content[0].text) || '';
-        if (txt) {
-          state.brief = txt;
-          persist();
-          $('#today-brief-text').textContent = txt;
-        } else {
-          fallbackBrief();
-        }
+        if (txt) { state.brief = txt; persist(); $('#today-brief-text').textContent = txt; }
+        else fallbackBrief();
       })
       .catch(fallbackBrief);
   }
   function fallbackBrief() {
-    var name = state.profile.name || 'there';
+    var name = state.profile.first || 'there';
     var n = state.todos.filter(function(t){return !t.done;}).length;
     var s = state.schedule.length;
     var line = 'Morning, ' + name + '. ';
@@ -1278,102 +1457,95 @@
     if (n) line += n + ' open to-do' + (n === 1 ? '' : 's') + '.';
     else line += 'Inbox is clear.';
     $('#today-brief-text').textContent = line;
-    state.brief = line;
-    persist();
+    state.brief = line; persist();
   }
 
   // ── Brief playback ────────────────────────────────────────────
   var speaking = false;
   function playBrief() {
-    if (!('speechSynthesis' in window)) { toast('Speech not supported here'); return; }
+    if (!('speechSynthesis' in window)) { toast('Speech not supported'); return; }
     var txt = state.brief || $('#today-brief-text').textContent;
     if (!txt) return;
     var btn = $('#today-brief-play');
     if (speaking) {
       window.speechSynthesis.cancel();
-      btn.classList.remove('speaking'); btn.textContent = '▶';
-      speaking = false; return;
+      btn.classList.remove('speaking'); speaking = false; return;
     }
     var u = new SpeechSynthesisUtterance(txt);
-    u.rate = 1.0; u.pitch = 1.0;
-    u.onend = function(){ speaking = false; btn.classList.remove('speaking'); btn.textContent = '▶'; };
+    u.onend = function(){ speaking = false; btn.classList.remove('speaking'); };
     u.onerror = u.onend;
-    btn.classList.add('speaking'); btn.textContent = '⏸'; speaking = true;
+    btn.classList.add('speaking'); speaking = true;
     window.speechSynthesis.speak(u);
   }
+  $('#today-brief-play').addEventListener('click', playBrief);
 
-  // ── Todos / schedule mutations ────────────────────────────────
+  // ── Mutations ─────────────────────────────────────────────────
   function toggleTodo(id) {
     state.todos.forEach(function(t){ if (t.id === id) t.done = !t.done; });
-    persist();
-    renderToday();
+    persist(); renderToday();
     if (state.activeList) renderListDetail();
+    renderLists();
   }
   function addTodo(label, opts) {
     opts = opts || {};
     if (!label || !label.trim()) return null;
-    var t = {
-      id: uid(),
-      label: label.trim(),
-      done: false,
-      bucket: opts.bucket || 'today',
-      containerId: opts.containerId || null,
-      icon: opts.icon || '•',
-      createdAt: Date.now()
-    };
-    state.todos.unshift(t);
-    persist();
-    return t;
+    var t = { id: uid(), label: label.trim(), done: false,
+      bucket: opts.bucket || 'today', containerId: opts.containerId || null,
+      icon: opts.icon || '·', createdAt: Date.now() };
+    state.todos.unshift(t); persist(); return t;
   }
   function addSchedule(time, label, icon) {
-    var s = { id: uid(), time: time, label: label, icon: icon || '•' };
-    state.schedule.push(s);
-    persist();
-    return s;
+    var s = { id: uid(), time: time, label: label, icon: icon || '·' };
+    state.schedule.push(s); persist(); return s;
   }
   function addContainer(name) {
     var c = { id: uid(), name: name.trim() };
-    state.containers.push(c);
-    persist();
-    return c;
+    state.containers.push(c); persist(); return c;
   }
 
   // ── Lists render ──────────────────────────────────────────────
   function renderLists() {
-    var t = state.todos;
-    $('#bucket-today').textContent   = t.filter(function(x){return x.bucket === 'today'   && !x.done;}).length;
-    $('#bucket-soon').textContent    = t.filter(function(x){return x.bucket === 'soon'    && !x.done;}).length;
-    $('#bucket-someday').textContent = t.filter(function(x){return x.bucket === 'someday' && !x.done;}).length;
-
-    var c = $('#containers-list');
-    c.innerHTML = '';
-    state.containers.forEach(function(ct){
-      var count = state.todos.filter(function(x){ return x.containerId === ct.id && !x.done; }).length;
-      var row = el('div', { class: 'container-row' }, [
-        el('span', { class: 'name', text: ct.name }),
+    var rows = $('#lists-rows'); rows.innerHTML = '';
+    var total = 0;
+    state.containers.forEach(function(c){
+      var n = state.todos.filter(function(t){ return t.containerId === c.id && !t.done; }).length;
+      total += n;
+      var r = el('div', { class: 'list-row' }, [
+        el('span', { class: 'name', text: c.name }),
         el('span', { class: 'meta' }, [
-          el('span', { class: 'count mono', text: String(count) }),
+          el('span', { class: 'count mono', text: pad(n) }),
           el('span', { class: 'chev', text: '›' })
         ])
       ]);
-      row.addEventListener('click', function(){ openList('container', ct.id, ct.name); });
-      c.appendChild(row);
+      r.addEventListener('click', function(){ openList('container', c.id, c.name); });
+      rows.appendChild(r);
     });
+    ['today','soon','someday'].forEach(function(b){
+      var n = state.todos.filter(function(t){ return t.bucket === b && !t.done; }).length;
+      total += n;
+      var r = el('div', { class: 'list-row' }, [
+        el('span', { class: 'name', text: b.charAt(0).toUpperCase() + b.slice(1) }),
+        el('span', { class: 'meta' }, [
+          el('span', { class: 'count mono', text: pad(n) }),
+          el('span', { class: 'chev', text: '›' })
+        ])
+      ]);
+      r.addEventListener('click', function(){ openList('bucket', b, b.charAt(0).toUpperCase() + b.slice(1)); });
+      rows.appendChild(r);
+    });
+    $('#lists-total').textContent = '↓ TOTAL ' + total;
   }
 
   // ── List detail ───────────────────────────────────────────────
   function openList(type, key, title) {
-    state.activeListType = type;
-    state.activeList = key;
-    $('#list-detail-section').textContent = type === 'container' ? 'Container' : 'List';
-    $('#list-detail-title').textContent = title;
-    $('#list-back-label').textContent = 'Lists';
+    state.activeListType = type; state.activeList = key;
+    $('#ld-title').textContent = title;
+    $('#ld-crumb').textContent = '10 / LISTS';
     renderListDetail();
     $('#list-detail').classList.remove('hidden');
   }
   function closeList() {
-    state.activeList = null;
-    state.activeListType = null;
+    state.activeList = null; state.activeListType = null;
     $('#list-detail').classList.add('hidden');
   }
   function listDetailFilter() {
@@ -1381,19 +1553,22 @@
     return function(t){ return t.bucket === state.activeList; };
   }
   function renderListDetail() {
-    var rows = $('#list-detail-rows');
-    rows.innerHTML = '';
+    var rows = $('#ld-rows'); rows.innerHTML = '';
     var items = state.todos.filter(listDetailFilter());
-    $('#list-detail-title').textContent = items.filter(function(t){return !t.done;}).length + ' items';
+    var openCount = items.filter(function(t){return !t.done;}).length;
+    $('#ld-count').textContent = openCount + ' ITEMS';
+    $('#ld-sub').textContent = items.length + ' items · ungrouped';
     if (!items.length) {
-      rows.appendChild(el('div', { class: 'empty', text: 'Nothing here yet.' }));
+      rows.appendChild(el('div', { class: 'empty' }, [
+        el('div', { class: 'empty-copy', text: 'Nothing here yet. Add your first item below.' })
+      ]));
       return;
     }
     items.forEach(function(t){
       var row = el('div', { class: 'row' + (t.done ? ' done' : '') }, [
         el('span', { class: 'check' }),
         el('span', { class: 'row-label', text: t.label }),
-        el('span', { class: 'row-icon', text: t.icon || '•' })
+        el('span', { class: 'row-icon', text: t.icon || '·' })
       ]);
       row.addEventListener('click', function(){ toggleTodo(t.id); });
       rows.appendChild(row);
@@ -1403,77 +1578,194 @@
   $('#list-detail-input').addEventListener('keydown', function(e){
     if (e.key === 'Enter') {
       var v = e.target.value;
-      if (state.activeListType === 'container') {
-        addTodo(v, { containerId: state.activeList });
-      } else {
-        addTodo(v, { bucket: state.activeList });
-      }
+      if (state.activeListType === 'container') addTodo(v, { containerId: state.activeList });
+      else addTodo(v, { bucket: state.activeList });
       e.target.value = '';
-      renderListDetail();
-      renderLists();
-      renderToday();
+      renderListDetail(); renderLists(); renderToday();
     }
   });
-  $('#list-detail-mic').addEventListener('click', function(){
-    switchTab('capture');
+  $('#list-detail-mic').addEventListener('click', function(){ openCapture(); });
+  $('#new-list-btn').addEventListener('click', function(){
+    var name = window.prompt('List name');
+    if (name && name.trim()) { addContainer(name); renderLists(); toast('Created'); }
   });
 
   // ── Calendar render ───────────────────────────────────────────
+  var calMode = 'month';
   function renderCalendar() {
     var now = new Date();
-    $('#cal-month').textContent = MONTHS_FULL[now.getMonth()].toLowerCase() + '.';
-    $('#cal-day-label').textContent = WEEKDAYS_FULL[now.getDay()] + ' · ' + now.getDate();
+    $('#cal-title').textContent = MON_F[now.getMonth()];
+    $('#cal-crumb').textContent = '12 / CALENDAR';
+    var meta = calMode === 'month'
+      ? '↓ MONTH ' + pad(now.getMonth() + 1) + '.' + now.getFullYear().toString().slice(-2)
+      : '↓ TODAY ' + pad(now.getMonth() + 1) + '.' + pad(now.getDate());
+    $('#cal-meta').textContent = meta;
 
-    var strip = $('#week-strip');
-    strip.innerHTML = '';
-    var todayDow = now.getDay();
-    var start = new Date(now);
-    start.setDate(now.getDate() - todayDow);
-    for (var i = 0; i < 7; i++) {
-      var d = new Date(start);
-      d.setDate(start.getDate() + i);
-      var isToday = d.toDateString() === now.toDateString();
-      var dEl = el('div', { class: 'week-day' + (isToday ? ' today' : '') }, [
-        el('span', { class: 'dow', text: WEEKDAYS[d.getDay()] }),
-        el('span', { class: 'num', text: String(d.getDate()) })
-      ]);
-      strip.appendChild(dEl);
+    var body = $('#cal-body'); body.innerHTML = '';
+    if (calMode === 'month') renderMonthGrid(body, now);
+    else renderDayView(body, now);
+  }
+  function renderMonthGrid(body, now) {
+    var grid = el('div', { class: 'cal-grid' });
+    ['M','T','W','T','F','S','S'].forEach(function(d){
+      grid.appendChild(el('div', { class: 'dow', text: d }));
+    });
+    var first = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Monday-first: shift so monday is column 0
+    var startCol = (first.getDay() + 6) % 7;
+    var daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    var todayN = now.getDate();
+    for (var i = 0; i < startCol; i++) grid.appendChild(el('div', { class: 'day muted' }));
+    for (var d = 1; d <= daysInMonth; d++) {
+      var cls = 'day' + (d === todayN ? ' today' : '');
+      grid.appendChild(el('div', { class: cls, text: String(d) }));
     }
+    body.appendChild(grid);
 
-    var evs = $('#cal-events');
-    evs.innerHTML = '';
+    body.appendChild(el('div', { class: 'divider' }));
+    body.appendChild(el('div', { class: 'crumb', html: '<span class="l">TODAY · ' + DOW_F[now.getDay()] + '</span><span class="r"></span>' }));
     if (!state.schedule.length) {
-      evs.appendChild(el('div', { class: 'empty', text: 'No events.' }));
+      body.appendChild(el('div', { class: 'empty' }, [
+        el('div', { class: 'empty-copy', text: 'Calendar is empty. Connect Google Calendar to fill in events automatically.' })
+      ]));
     } else {
       state.schedule.slice().sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); }).forEach(function(s){
-        evs.appendChild(el('div', { class: 'row' }, [
-          el('span', { class: 'time mono', text: s.time || '--:--' }),
+        body.appendChild(el('div', { class: 'row' }, [
+          el('span', { class: 'time mono', text: formatTimeReadable(s.time) }),
           el('span', { class: 'row-label', text: s.label || '' }),
-          el('span', { class: 'row-icon', text: s.icon || '•' })
+          el('span', { class: 'row-icon', text: s.icon || '·' })
         ]));
       });
     }
   }
+  function renderDayView(body, now) {
+    var strip = el('div', { class: 'day-strip' });
+    var start = new Date(now); start.setDate(now.getDate() - now.getDay());
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(start); d.setDate(start.getDate() + i);
+      var isToday = d.toDateString() === now.toDateString();
+      strip.appendChild(el('div', { class: 'ds-day' + (isToday ? ' today' : '') }, [
+        el('span', { class: 'dow', text: DOW_S[d.getDay()] }),
+        el('span', { class: 'num', text: String(d.getDate()) })
+      ]));
+    }
+    body.appendChild(strip);
+    body.appendChild(el('div', { class: 'divider' }));
+    body.appendChild(el('div', { class: 'crumb', html: '<span class="l">' + DOW_F[now.getDay()] + ' · ' + MON_F[now.getMonth()].toUpperCase() + ' ' + pad(now.getDate()) + '</span><span class="r"></span>' }));
+    if (!state.schedule.length) {
+      body.appendChild(el('div', { class: 'empty' }, [ el('div', { class: 'empty-copy', text: 'No events today.' }) ]));
+    } else {
+      state.schedule.slice().sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); }).forEach(function(s){
+        body.appendChild(el('div', { class: 'row' }, [
+          el('span', { class: 'time mono', text: formatTimeReadable(s.time) }),
+          el('span', { class: 'row-label', text: s.label || '' }),
+          el('span', { class: 'row-icon', text: s.icon || '·' })
+        ]));
+      });
+    }
+  }
+  $$('#cal-seg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      $$('#cal-seg button').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      calMode = b.dataset.seg;
+      renderCalendar();
+    });
+  });
 
   // ── Settings render ───────────────────────────────────────────
   function renderSettings() {
-    var displayName = (state.profile.name + ' ' + (state.profile.lastname || '')).trim() || 'Robin user';
-    var nameEl = $('#settings-name'); if (nameEl) nameEl.textContent = displayName;
-    var subEl = $('#settings-sub');   if (subEl)  subEl.textContent  = state.profile.email || 'Tap to edit profile';
-    var av = $('#settings-avatar');
-    av.innerHTML = '';
+    var name = (state.profile.first + ' ' + (state.profile.last || '')).trim() || 'Robin User';
+    $('#set-profile-name').textContent = name;
+    var conns = [];
+    if (state.connections.calendar) conns.push('Cal');
+    if (state.connections.mail) conns.push('Mail');
+    if (state.connections.contacts) conns.push('Contacts');
+    $('#set-conn-summary').textContent = conns.length ? conns.join(' · ') : 'Not connected';
+    $('#set-hours-summary').textContent = formatHoursSummary();
+  }
+  function formatHoursSummary() {
+    var b = formatTimeReadable(state.hours.brief).toUpperCase();
+    var q = formatTimeReadable(state.hours.quiet).toUpperCase();
+    return b + ' – ' + q;
+  }
+
+  // ── Sub-screen nav ────────────────────────────────────────────
+  var backStack = [];
+  function openSub(name) {
+    backStack.push('settings');
+    var idMap = { profile: '#profile-screen', connections: '#connections-screen', hours: '#hours-screen' };
+    var sel = idMap[name]; if (!sel) return;
+    if (name === 'profile') renderProfileSub();
+    if (name === 'connections') renderConnectionsSub();
+    if (name === 'hours') renderHoursSub();
+    $(sel).classList.remove('hidden');
+  }
+  function closeSub() {
+    ['#profile-screen','#connections-screen','#hours-screen'].forEach(function(s){
+      $(s).classList.add('hidden');
+    });
+    backStack.pop();
+  }
+  $$('[data-go]').forEach(function(b){
+    b.addEventListener('click', function(){ openSub(b.dataset.go); });
+  });
+  $$('[data-back]').forEach(function(b){
+    b.addEventListener('click', function(){ closeSub(); renderSettings(); });
+  });
+
+  function renderProfileSub() {
+    $('#profile-first').value = state.profile.first || '';
+    $('#profile-last').value = state.profile.last || '';
+    $('#profile-email').value = state.profile.email || '';
+    var av = $('#profile-avatar'); av.innerHTML = '';
     if (state.profile.photo) {
       var im = document.createElement('img'); im.src = state.profile.photo; av.appendChild(im);
     } else {
-      av.appendChild(el('span', { text: (state.profile.name || 'R').charAt(0).toUpperCase() }));
+      av.appendChild(el('span', { text: (state.profile.first || 'M').charAt(0).toUpperCase() }));
     }
-    function setConn(id, on) {
-      var r = $(id); if (!r) return;
-      if (on) r.classList.remove('off'); else r.classList.add('off');
-    }
-    setConn('#conn-gcal', state.connections.calendar);
-    setConn('#conn-gmail', state.connections.gmail);
-    setConn('#conn-contacts', state.connections.contacts);
+  }
+  $('#profile-photo-input').addEventListener('change', function(e){
+    var f = e.target.files && e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function(ev){
+      state.profile.photo = ev.target.result; persist();
+      renderProfileSub();
+    };
+    r.readAsDataURL(f);
+  });
+  $('#profile-save-btn').addEventListener('click', function(){
+    state.profile.first = $('#profile-first').value.trim();
+    state.profile.last  = $('#profile-last').value.trim();
+    state.profile.email = $('#profile-email').value.trim();
+    persist();
+    toast('Saved');
+    closeSub(); renderSettings();
+  });
+
+  function renderConnectionsSub() {
+    $('#cc-cal-email').textContent  = state.profile.email || 'Not connected';
+    $('#cc-mail-email').textContent = state.profile.email || 'Not connected';
+    $('#cc-cal-status').innerHTML  = state.connections.calendar ? '<span class="greendot"></span>Connected' : 'Disconnected';
+    $('#cc-mail-status').innerHTML = state.connections.mail     ? '<span class="greendot"></span>Connected' : 'Disconnected';
+    $('#cc-cal-btn').textContent  = state.connections.calendar ? 'Disconnect' : 'Connect';
+    $('#cc-mail-btn').textContent = state.connections.mail     ? 'Disconnect' : 'Connect';
+  }
+  $('#cc-cal-btn').addEventListener('click', function(){
+    state.connections.calendar = !state.connections.calendar; persist();
+    renderConnectionsSub(); renderSettings();
+    toast(state.connections.calendar ? 'Connected' : 'Disconnected');
+  });
+  $('#cc-mail-btn').addEventListener('click', function(){
+    state.connections.mail = !state.connections.mail; persist();
+    renderConnectionsSub(); renderSettings();
+    toast(state.connections.mail ? 'Connected' : 'Disconnected');
+  });
+
+  function renderHoursSub() {
+    $('#hr-brief').textContent  = formatTimeReadable(state.hours.brief).toUpperCase();
+    $('#hr-digest').textContent = formatTimeReadable(state.hours.digest).toUpperCase();
+    $('#hr-quiet').textContent  = formatTimeReadable(state.hours.quiet).toUpperCase() + ' – ' + formatTimeReadable(state.hours.brief).toUpperCase();
   }
 
   // ── Tab switching ─────────────────────────────────────────────
@@ -1483,52 +1775,37 @@
     if (view) view.classList.add('active');
     $$('.tabbar button').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === name); });
 
-    document.body.classList.toggle('capture-on', name === 'capture');
-
-    if (name === 'today') renderToday();
-    if (name === 'lists') renderLists();
+    if (name === 'today')    renderToday();
+    if (name === 'lists')    renderLists();
     if (name === 'calendar') renderCalendar();
     if (name === 'settings') renderSettings();
+    if (name === 'chat')     renderChat();
 
+    // Addbar visibility: hide on lists + settings + chat (chat has its own input area later)
     var addbar = $('#addbar');
-    if (name === 'today' || name === 'lists') addbar.style.display = 'flex';
+    if (name === 'today' || name === 'calendar' || name === 'chat') addbar.style.display = 'flex';
     else addbar.style.display = 'none';
   }
-  $$('.tabbar button').forEach(function(b){ b.addEventListener('click', function(){ switchTab(b.dataset.tab); }); });
-
-  document.addEventListener('click', function(e){
-    var bucket = e.target.closest && e.target.closest('.bucket-row');
-    if (bucket && bucket.dataset.bucket) {
-      var b = bucket.dataset.bucket;
-      var label = b.charAt(0).toUpperCase() + b.slice(1);
-      openList('bucket', b, label);
-    }
-  });
-  $('#new-container-btn').addEventListener('click', function(){
-    var name = window.prompt('Container name');
-    if (name && name.trim()) {
-      addContainer(name);
-      renderLists();
-      toast('Created');
-    }
+  $$('.tabbar button').forEach(function(b){
+    b.addEventListener('click', function(){ switchTab(b.dataset.tab); });
   });
 
-  // ── Sticky add bar ────────────────────────────────────────────
+  // ── Add bar ───────────────────────────────────────────────────
   $('#addbar-input').addEventListener('keydown', function(e){
     if (e.key === 'Enter') {
       var v = e.target.value;
       if (v && v.trim()) {
-        addTodo(v);
+        // If on chat tab, send as chat message
+        var active = $('.view.active'); var name = active && active.dataset.view;
+        if (name === 'chat') { sendChat(v.trim()); }
+        else { addTodo(v); toast('Added'); renderToday(); renderLists(); }
         e.target.value = '';
-        renderToday();
-        renderLists();
-        toast('Added');
       }
     }
   });
-  $('#addbar-mic').addEventListener('click', function(){ switchTab('capture'); });
+  $('#addbar-mic').addEventListener('click', openCapture);
 
-  // ── Voice capture ─────────────────────────────────────────────
+  // ── Capture overlay ───────────────────────────────────────────
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var recog = null;
   var capturing = false;
@@ -1547,6 +1824,15 @@
     if (waveTimer) { clearInterval(waveTimer); waveTimer = null; }
     captureBars.forEach(function(b){ b.style.height = '12px'; });
   }
+  function openCapture() {
+    $('#capture-overlay').classList.remove('hidden');
+    $('#capture-transcript').textContent = '';
+  }
+  function closeCapture() {
+    if (capturing) stopCapture();
+    $('#capture-overlay').classList.add('hidden');
+  }
+  $('#capture-close').addEventListener('click', closeCapture);
 
   function startCapture() {
     if (capturing) return;
@@ -1556,14 +1842,12 @@
     animateWave();
     $('#capture-transcript').textContent = '';
     if (!SR) {
-      $('#capture-transcript').textContent = 'Voice not supported on this device. Try typing in the add bar.';
+      $('#capture-transcript').textContent = 'Voice not supported on this device.';
       return;
     }
     try {
       recog = new SR();
-      recog.continuous = false;
-      recog.interimResults = true;
-      recog.lang = 'en-US';
+      recog.continuous = false; recog.interimResults = true; recog.lang = 'en-US';
       var finalText = '';
       recog.onresult = function(ev){
         var interim = '';
@@ -1579,9 +1863,7 @@
         stopCapture();
       };
       recog.onend = function(){
-        if (finalText.trim()) {
-          routeUtterance(finalText.trim());
-        }
+        if (finalText.trim()) routeUtterance(finalText.trim());
         stopCapture();
       };
       recog.start();
@@ -1610,90 +1892,113 @@
     $('#capture-transcript').textContent = text + ' …';
     fetch('/api/claude', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system: sys,
-        max_tokens: 220,
-        messages: [{ role: 'user', content: text }]
-      })
+      body: JSON.stringify({ system: sys, max_tokens: 220, messages: [{ role: 'user', content: text }] })
     }).then(function(r){ return r.json(); })
       .then(function(data){
         var raw = (data && data.content && data.content[0] && data.content[0].text) || '';
         var parsed = null;
-        try {
-          var jsonMatch = raw.match(/\{[\s\S]*\}/);
-          parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-        } catch (e) { parsed = null; }
+        try { var m = raw.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null; }
+        catch (e) { parsed = null; }
         if (!parsed) { fallbackRoute(text); return; }
         applyRouted(parsed, text);
       })
       .catch(function(){ fallbackRoute(text); });
   }
   function fallbackRoute(text) {
-    var timeMatch = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i);
-    if (timeMatch) {
-      var h = parseInt(timeMatch[1], 10);
-      var m = parseInt(timeMatch[2] || '0', 10);
-      var ap = (timeMatch[3] || '').toLowerCase();
+    var m = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i);
+    if (m) {
+      var h = parseInt(m[1], 10); var mm = parseInt(m[2] || '0', 10);
+      var ap = (m[3] || '').toLowerCase();
       if (ap === 'pm' && h < 12) h += 12;
       if (ap === 'am' && h === 12) h = 0;
-      addSchedule(pad(h) + ':' + pad(m), text);
+      addSchedule(pad(h) + ':' + pad(mm), text);
       toast('Scheduled');
-    } else {
-      addTodo(text);
-      toast('Added');
-    }
-    renderToday();
-    renderLists();
-    switchTab('today');
+    } else { addTodo(text); toast('Added'); }
+    renderToday(); renderLists();
+    closeCapture(); switchTab('today');
   }
   function applyRouted(p, originalText) {
     if (p.type === 'schedule' && p.time) {
-      addSchedule(p.time, p.label || originalText, p.icon || '•');
+      addSchedule(p.time, p.label || originalText, p.icon || '·');
       toast('Scheduled · ' + p.time);
     } else if (p.type === 'list' && p.listName) {
-      addContainer(p.listName);
-      toast('List created');
+      addContainer(p.listName); toast('List created');
     } else if (p.type === 'todo') {
-      addTodo(p.label || originalText, { icon: p.icon || '•' });
-      toast('Added');
-    } else {
-      addTodo(p.label || originalText);
-      toast('Captured');
-    }
-    renderToday();
-    renderLists();
-    setTimeout(function(){ switchTab('today'); }, 600);
+      addTodo(p.label || originalText, { icon: p.icon || '·' }); toast('Added');
+    } else { addTodo(p.label || originalText); toast('Captured'); }
+    renderToday(); renderLists();
+    setTimeout(function(){ closeCapture(); switchTab('today'); }, 600);
   }
 
-  $('#today-brief-play').addEventListener('click', playBrief);
-
-  $$('.link-row').forEach(function(r){
-    r.addEventListener('click', function(){
-      toast(r.dataset.link + ' — coming soon');
-    });
-  });
-  $$('.conn-row').forEach(function(r){
-    r.addEventListener('click', function(){
-      var id = r.id;
-      var k = id === 'conn-gcal' ? 'calendar' : id === 'conn-gmail' ? 'gmail' : 'contacts';
-      state.connections[k] = !state.connections[k];
+  // ── Chat ──────────────────────────────────────────────────────
+  var DEFAULT_REPLIES = ['What\'s my schedule?', 'What should I work on?', 'Recap today.'];
+  function renderChat() {
+    var list = $('#chat-list'); list.innerHTML = '';
+    if (!state.chat.length) {
+      state.chat.push({ role: 'robin', text: 'Hi, I\'m Robin. What\'s on your mind?', suggestions: DEFAULT_REPLIES });
       persist();
-      renderSettings();
+    }
+    state.chat.forEach(function(m){
+      var b = el('div', { class: 'bubble ' + (m.role === 'user' ? 'user' : 'robin') });
+      b.textContent = m.text;
+      list.appendChild(b);
+      if (m.role === 'robin' && Array.isArray(m.suggestions) && m.suggestions.length) {
+        var chips = el('div', { class: 'reply-chips' });
+        m.suggestions.forEach(function(s){
+          var c = el('button', { class: 'reply-chip', text: s });
+          c.addEventListener('click', function(){ sendChat(s); });
+          chips.appendChild(c);
+        });
+        list.appendChild(chips);
+      }
     });
+    // Scroll bottom
+    setTimeout(function(){
+      var v = $('.view[data-view="chat"]');
+      if (v) v.scrollTop = v.scrollHeight;
+    }, 50);
+  }
+  function sendChat(text) {
+    state.chat.push({ role: 'user', text: text }); persist(); renderChat();
+    var sys = "You are Robin, a serious assistant. Keep replies short — 1-2 sentences. No emoji, no exclamation marks. The user's name is " + (state.profile.first || 'friend') + ". Today's schedule: " + (state.schedule.map(function(s){return s.time+' '+s.label;}).join(', ') || 'empty') + ". Open todos: " + (state.todos.filter(function(t){return !t.done;}).map(function(t){return t.label;}).join(', ') || 'none') + ".";
+    var msgs = state.chat.slice(-12).map(function(m){ return { role: m.role === 'robin' ? 'assistant' : 'user', content: m.text }; });
+    fetch('/api/claude', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: sys, max_tokens: 240, messages: msgs })
+    }).then(function(r){ return r.json(); })
+      .then(function(data){
+        var txt = (data && data.content && data.content[0] && data.content[0].text) || '';
+        state.chat.push({ role: 'robin', text: txt || 'Hmm, no answer for that.' });
+        persist(); renderChat();
+      })
+      .catch(function(){
+        state.chat.push({ role: 'robin', text: 'Network hiccup. Try again in a moment.' }); persist(); renderChat();
+      });
+  }
+
+  // ── Settings actions ──────────────────────────────────────────
+  $('#signout-btn').addEventListener('click', function(){
+    if (!confirm('Sign out?')) return;
+    state.onboarded = false; persist();
+    location.reload();
+  });
+  $('#delete-btn').addEventListener('click', function(){
+    if (!confirm('Delete account and all local data?')) return;
+    try { localStorage.removeItem(STATE_KEY); } catch (e) {}
+    location.reload();
+  });
+  $$('[data-link]').forEach(function(r){
+    r.addEventListener('click', function(){ toast(r.dataset.link + ' — coming soon'); });
   });
 
+  // ── Mount ─────────────────────────────────────────────────────
   function mountApp() {
-    tickClock();
-    setInterval(tickClock, 15000);
+    tickClock(); setInterval(tickClock, 15000);
     fetchWeather();
-    renderToday();
-    renderLists();
-    renderSettings();
+    renderToday(); renderLists(); renderSettings();
     generateBrief();
   }
-
   function boot() {
-    renderObProgress();
     if (state.onboarded) {
       $('#onboarding').classList.add('hidden');
       $('#app').classList.remove('hidden');
@@ -1701,28 +2006,9 @@
     } else {
       $('#app').classList.add('hidden');
       $('#onboarding').classList.remove('hidden');
-      if (state.profile.email) $('#ob-email').value = state.profile.email;
-      if (state.profile.name)  $('#ob-name').value  = state.profile.name;
-      if ($('#ob-lastname') && state.profile.lastname) $('#ob-lastname').value = state.profile.lastname;
-      if (state.profile.photo) {
-        var picker = $('#ob-photo-picker');
-        picker.innerHTML = '';
-        var im = document.createElement('img'); im.src = state.profile.photo; picker.appendChild(im);
-      }
-      $('#ob-hours-brief').value  = state.hours.brief;
-      $('#ob-hours-digest').value = state.hours.digest;
-      $('#ob-hours-quiet').value  = state.hours.quiet;
-      if (state.connections.calendar) {
-        $('#ob-gcal').classList.add('connected');
-        $('#ob-gcal-btn').textContent = 'Connected';
-      }
-      obPeopleBuf = state.people.slice();
-      renderObPeople();
-      tickClock();
-      setInterval(tickClock, 15000);
+      tickClock(); setInterval(tickClock, 15000);
     }
   }
-
   document.addEventListener('DOMContentLoaded', boot);
   if (document.readyState !== 'loading') boot();
 
