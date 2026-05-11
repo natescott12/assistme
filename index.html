@@ -1,28 +1,1589 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0F1319" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="AssistMe" />
-    <title>AssistMe</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-    <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", function () {
-          navigator.serviceWorker.register("/sw.js").catch(function (e) { console.warn("SW registration failed", e); });
-        });
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#111113" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Robin" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <title>Robin</title>
+  <style>
+    :root {
+      --bg: #111113;
+      --bg-deep: #0A0A0C;
+      --surface: #18181B;
+      --surface-2: #1F1F23;
+      --border: rgba(255,255,255,0.06);
+      --border-strong: rgba(255,255,255,0.12);
+      --text: #FFFFFF;
+      --text-dim: #8A8A92;
+      --text-faint: #5A5A62;
+      --accent: #2EC4D4;
+      --accent-dim: rgba(46,196,212,0.15);
+      --accent-glow: rgba(46,196,212,0.35);
+      --success: #43E695;
+      --danger: #FF4F5E;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+      --tabbar-h: 64px;
+      --statusbar-h: 44px;
+      --addbar-h: 64px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', -apple-system, system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      overflow: hidden;
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    button, input, textarea { font-family: inherit; color: inherit; background: none; border: none; outline: none; }
+    button { cursor: pointer; }
+    input, textarea { user-select: text; -webkit-user-select: text; }
+    .mono { font-family: 'Space Mono', 'SF Mono', monospace; letter-spacing: -0.02em; }
+    .label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint); }
+    .hidden { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+
+    /* ── Status bar ───────────────────────────────────────────── */
+    .statusbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: calc(var(--statusbar-h) + var(--safe-top));
+      padding: calc(var(--safe-top) + 6px) 24px 6px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: 'Space Mono', monospace;
+      font-size: 13px; font-weight: 700;
+      color: var(--text);
+      background: linear-gradient(to bottom, var(--bg) 60%, transparent);
+      z-index: 50;
+      pointer-events: none;
+    }
+    .statusbar .right { display: flex; gap: 6px; align-items: center; opacity: 0.85; }
+    .statusbar .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text); display: inline-block; }
+
+    /* ── Tab bar ──────────────────────────────────────────────── */
+    .tabbar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: calc(var(--tabbar-h) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      background: rgba(17,17,19,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      z-index: 40;
+    }
+    .tabbar button {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--text-faint);
+      transition: color 120ms ease;
+    }
+    .tabbar button.active { color: var(--accent); }
+    .tabbar button .tab-icon { font-size: 18px; line-height: 1; }
+    .tabbar button[data-tab="capture"] .tab-icon {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--bg); font-size: 16px;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .tabbar button[data-tab="capture"] { padding-top: 6px; }
+
+    /* ── View container ───────────────────────────────────────── */
+    .view {
+      position: absolute; inset: 0;
+      padding-top: calc(var(--statusbar-h) + var(--safe-top));
+      padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      display: none;
+    }
+    .view.active { display: block; }
+    .view-inner { padding: 8px 24px 24px 24px; }
+    .view-inner.with-addbar { padding-bottom: calc(var(--addbar-h) + 24px); }
+
+    /* ── Onboarding ───────────────────────────────────────────── */
+    .ob {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      padding: calc(var(--safe-top) + 48px) 32px calc(var(--safe-bottom) + 32px) 32px;
+      display: flex; flex-direction: column;
+      z-index: 100;
+    }
+    .ob-step { display: none; flex: 1; flex-direction: column; }
+    .ob-step.active { display: flex; }
+    .ob-progress { display: flex; gap: 6px; margin-bottom: 32px; }
+    .ob-progress .seg { flex: 1; height: 3px; border-radius: 2px; background: var(--surface-2); }
+    .ob-progress .seg.done { background: var(--accent); }
+    .ob h1 {
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: 56px; line-height: 1; letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+    .ob h2 {
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: 34px; line-height: 1.05; letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .ob .sub { color: var(--text-dim); font-size: 16px; margin-bottom: 40px; }
+    .ob .stretch { flex: 1; }
+    .ob-launch { justify-content: center; text-align: left; }
+    .ob-launch .logo {
+      font-family: 'Space Mono', monospace; font-size: 72px; font-weight: 700;
+      letter-spacing: -0.04em; margin-bottom: 8px;
+    }
+    .ob-launch .tag {
+      font-family: 'Space Mono', monospace; font-size: 14px;
+      letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
+      margin-bottom: 64px;
+    }
+    .field { margin-bottom: 20px; }
+    .field label { display: block; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
+    .field input[type=text], .field input[type=email], .field input[type=password], .field input[type=time] {
+      width: 100%; padding: 14px 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; font-size: 16px; color: var(--text);
+      transition: border-color 120ms ease;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .photo-picker {
+      width: 96px; height: 96px; border-radius: 50%;
+      background: var(--surface); border: 1px dashed var(--border-strong);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-faint); font-size: 24px;
+      margin-bottom: 16px; overflow: hidden;
+      cursor: pointer;
+    }
+    .photo-picker img { width: 100%; height: 100%; object-fit: cover; }
+    .people-list { margin-bottom: 16px; }
+    .people-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; background: var(--surface); border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    .people-row .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-dim); flex-shrink: 0; }
+    .people-row .info { flex: 1; min-width: 0; }
+    .people-row .info .name { font-size: 14px; font-weight: 500; }
+    .people-row .info .rel { font-size: 12px; color: var(--text-dim); }
+    .people-row .rm { color: var(--text-faint); font-size: 14px; padding: 4px 8px; }
+    .calendar-card {
+      padding: 20px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 12px;
+    }
+    .calendar-card .logo-circle {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, #4285F4, #34A853);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .calendar-card .copy { flex: 1; }
+    .calendar-card .copy .title { font-size: 15px; font-weight: 600; }
+    .calendar-card .copy .sub { font-size: 13px; color: var(--text-dim); }
+    .calendar-card .connect {
+      padding: 8px 14px; background: var(--accent); color: var(--bg);
+      border-radius: 999px; font-size: 12px; font-weight: 600;
+    }
+    .calendar-card.connected .connect { background: var(--surface-2); color: var(--success); }
+    .hours-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .hours-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: var(--surface); border-radius: 12px;
+    }
+    .hours-row .name { display: flex; flex-direction: column; }
+    .hours-row .name .t { font-size: 14px; font-weight: 500; }
+    .hours-row .name .s { font-size: 11px; color: var(--text-dim); }
+    .hours-row input[type=time] {
+      width: 110px; padding: 8px 12px; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: 8px;
+      font-family: 'Space Mono', monospace; font-size: 14px;
+      color: var(--text); text-align: center;
+    }
+    .ob-done {
+      align-items: center; justify-content: center; text-align: center;
+    }
+    .ob-done .check {
+      width: 96px; height: 96px; border-radius: 50%;
+      background: var(--accent); color: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px; margin-bottom: 32px;
+      box-shadow: 0 0 60px var(--accent-glow);
+    }
+    .btn-primary {
+      width: 100%; padding: 16px;
+      background: var(--accent); color: var(--bg);
+      border-radius: 14px; font-size: 16px; font-weight: 600;
+      transition: transform 80ms ease, opacity 120ms ease;
+    }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.4; }
+    .btn-ghost {
+      width: 100%; padding: 14px;
+      background: transparent; color: var(--text-dim);
+      font-size: 14px; font-weight: 500;
+    }
+
+    /* ── Today screen ─────────────────────────────────────────── */
+    .today-weather-row {
+      display: flex; justify-content: space-between; align-items: stretch;
+      margin: 24px 0 8px 0;
+    }
+    .today-weather {
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .today-weather .hilo {
+      font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .today-weather .cond {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
+    }
+    .today-date-vert {
+      writing-mode: vertical-rl; transform: rotate(180deg);
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      letter-spacing: 0.20em; text-transform: uppercase; color: var(--text-faint);
+      align-self: flex-end;
+    }
+    .today-day {
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: 72px; line-height: 0.95; letter-spacing: -0.03em;
+      margin: 16px 0 32px 0;
+    }
+    .today-brief {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px;
+      display: flex; gap: 16px; align-items: flex-start;
+      margin-bottom: 32px;
+    }
+    .today-brief .text {
+      flex: 1; font-size: 14px; line-height: 1.5; color: var(--text);
+    }
+    .today-brief .play {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--accent); color: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .today-brief .play.speaking { animation: pulse-accent 1.2s infinite; }
+    @keyframes pulse-accent {
+      0%,100% { box-shadow: 0 4px 14px var(--accent-glow); }
+      50% { box-shadow: 0 4px 24px var(--accent-glow), 0 0 0 8px var(--accent-dim); }
+    }
+    .section { margin-bottom: 28px; }
+    .section .label { margin-bottom: 12px; }
+    .row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .row:last-child { border-bottom: none; }
+    .row .time {
+      font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
+      color: var(--text); width: 52px; flex-shrink: 0;
+    }
+    .row .check {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 1.5px solid var(--text-faint); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+    .row.done .check { background: var(--accent); border-color: var(--accent); color: var(--bg); font-size: 11px; }
+    .row.done .check::after { content: '✓'; }
+    .row .row-label { flex: 1; font-size: 14px; min-width: 0; }
+    .row.done .row-label { color: var(--text-dim); text-decoration: line-through; }
+    .row .row-icon { font-size: 14px; color: var(--text-faint); flex-shrink: 0; }
+    .empty {
+      color: var(--text-faint); font-size: 13px; font-style: italic;
+      padding: 12px 0;
+    }
+
+    /* ── Sticky add bar ───────────────────────────────────────── */
+    .addbar {
+      position: fixed; left: 0; right: 0;
+      bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+      height: var(--addbar-h);
+      padding: 12px 16px;
+      display: flex; gap: 10px; align-items: center;
+      background: linear-gradient(to top, var(--bg) 70%, transparent);
+      z-index: 30;
+    }
+    .addbar input {
+      flex: 1; padding: 12px 18px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 999px; font-size: 14px; color: var(--text);
+    }
+    .addbar input::placeholder { color: var(--text-faint); }
+    .addbar .mic {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--accent); color: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+      box-shadow: 0 4px 14px var(--accent-glow);
+      transition: transform 80ms ease;
+    }
+    .addbar .mic:active { transform: scale(0.94); }
+
+    /* ── Lists screen ─────────────────────────────────────────── */
+    .screen-title {
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: 42px; line-height: 1; letter-spacing: -0.02em;
+      margin: 8px 0 24px 0;
+    }
+    .divider { height: 1px; background: var(--border); margin: 16px 0 24px 0; }
+    .bucket-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 0; border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .bucket-row .name { font-size: 18px; font-weight: 500; }
+    .bucket-row .meta { display: flex; align-items: center; gap: 12px; }
+    .bucket-row .count {
+      font-family: 'Space Mono', monospace; font-size: 13px;
+      color: var(--text-dim);
+    }
+    .bucket-row .chev { color: var(--text-faint); font-size: 16px; }
+    .container-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 0; border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .container-row .name { font-size: 15px; }
+    .container-row .meta { display: flex; gap: 12px; align-items: center; }
+    .container-row .count { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text-dim); }
+    .new-container-btn {
+      margin-top: 16px; padding: 14px;
+      background: var(--surface); border: 1px dashed var(--border-strong);
+      border-radius: 12px;
+      color: var(--text-dim); font-size: 14px;
+      width: 100%; text-align: center;
+    }
+
+    /* ── List detail ─────────────────────────────────────────── */
+    #list-detail {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 60;
+      padding-top: calc(var(--statusbar-h) + var(--safe-top));
+      padding-bottom: calc(var(--addbar-h) + var(--safe-bottom));
+      overflow-y: auto;
+    }
+    .list-detail-inner { padding: 8px 24px 24px 24px; }
+    .back-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 0 16px 0;
+      cursor: pointer;
+    }
+    .back-row .arrow { font-size: 20px; color: var(--text); }
+    .back-row .label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint); }
+
+    /* ── Calendar ─────────────────────────────────────────────── */
+    .month-title {
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: 38px; line-height: 1; letter-spacing: -0.02em;
+      margin: 8px 0 24px 0;
+    }
+    .week-strip {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 6px; margin-bottom: 32px;
+    }
+    .week-day {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 8px 0;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .week-day .dow { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px; }
+    .week-day .num { font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700; }
+    .week-day.today {
+      background: var(--accent); color: var(--bg);
+    }
+    .week-day.today .dow, .week-day.today .num { color: var(--bg); }
+    .day-label {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      letter-spacing: 0.20em; text-transform: uppercase; color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    /* ── Capture screen ───────────────────────────────────────── */
+    .view[data-view="capture"] { background: var(--bg-deep); }
+    .capture-inner {
+      min-height: 100%;
+      padding: 32px 24px;
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+    .capture-status {
+      margin-top: 16px;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent);
+    }
+    .waveform {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      height: 100px; margin: 56px 0 40px 0; width: 100%;
+    }
+    .waveform .bar {
+      width: 4px; background: var(--accent);
+      border-radius: 2px; height: 12px;
+      transition: height 80ms ease;
+    }
+    .capture-transcript {
+      flex: 1; width: 100%;
+      font-family: 'DM Sans', sans-serif; font-size: 22px; line-height: 1.35;
+      color: var(--text); min-height: 100px;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 0 8px;
+    }
+    .capture-transcript:empty::before { content: 'Hold the button to start'; color: var(--text-faint); font-size: 14px; }
+    .capture-chip {
+      display: inline-flex; gap: 8px; align-items: center;
+      padding: 6px 12px; border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      letter-spacing: 0.18em; color: var(--text-dim);
+      margin: 24px 0;
+      opacity: 0; transition: opacity 200ms ease;
+    }
+    .capture-chip.show { opacity: 1; }
+    .capture-mic {
+      width: 96px; height: 96px; border-radius: 50%;
+      background: var(--accent); color: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      margin: 32px 0 0 0;
+      box-shadow: 0 8px 32px var(--accent-glow);
+      transition: transform 100ms ease;
+      position: relative;
+    }
+    .capture-mic:active { transform: scale(0.94); }
+    .capture-mic.listening::after {
+      content: ''; position: absolute; inset: -8px;
+      border-radius: 50%; border: 2px solid var(--accent);
+      animation: pulse-ring 1.4s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.9); opacity: 1; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+    .capture-hint {
+      margin-top: 16px;
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint);
+    }
+
+    /* ── Settings ─────────────────────────────────────────────── */
+    .settings-profile {
+      display: flex; gap: 16px; align-items: center;
+      padding: 16px 0 24px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .settings-profile .avatar {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--surface); display: flex; align-items: center; justify-content: center;
+      color: var(--text-dim); font-size: 22px;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .settings-profile .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .settings-profile .info .name { font-size: 18px; font-weight: 600; }
+    .settings-profile .info .sub { font-size: 13px; color: var(--text-dim); }
+    .conn-row, .link-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 0; border-bottom: 1px solid var(--border);
+    }
+    .conn-row .left, .link-row .left { display: flex; gap: 12px; align-items: center; }
+    .conn-row .name, .link-row .name { font-size: 15px; }
+    .conn-row .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px rgba(67,230,149,0.5);
+    }
+    .conn-row.off .status-dot { background: var(--text-faint); box-shadow: none; }
+    .link-row .chev { color: var(--text-faint); font-size: 16px; }
+    .version {
+      margin-top: 32px; padding: 16px 0;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint);
+      text-align: center;
+    }
+
+    /* ── Toast ───────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: calc(var(--tabbar-h) + var(--addbar-h) + var(--safe-bottom) + 16px);
+      left: 50%; transform: translateX(-50%) translateY(20px);
+      padding: 12px 20px; background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 999px; font-size: 13px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+      z-index: 200; max-width: 80vw; text-align: center;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* iOS rubber-band fix */
+    .view::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- ── ONBOARDING ──────────────────────────────────────────────── -->
+<section id="onboarding" class="ob">
+  <div class="ob-progress" id="ob-progress" aria-hidden="true"></div>
+
+  <!-- 1: Launch -->
+  <div class="ob-step ob-launch active" data-step="1">
+    <div class="stretch"></div>
+    <div class="logo">Robin</div>
+    <div class="tag">A Serious Tool.</div>
+    <button class="btn-primary" data-action="ob-next">Get started</button>
+  </div>
+
+  <!-- 2: Create Account -->
+  <div class="ob-step" data-step="2">
+    <h2>Create account</h2>
+    <p class="sub">Robin keeps your data on this device. Email is for sync later.</p>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="ob-email" placeholder="you@example.com" autocomplete="email" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="ob-password" placeholder="Choose a password" autocomplete="new-password" />
+    </div>
+    <div class="stretch"></div>
+    <button class="btn-primary" data-action="ob-next">Continue</button>
+  </div>
+
+  <!-- 3: Build Profile -->
+  <div class="ob-step" data-step="3">
+    <h2>Your profile</h2>
+    <p class="sub">Robin will use this to address you and personalize briefs.</p>
+    <label for="ob-photo-input" class="photo-picker" id="ob-photo-picker">
+      <span id="ob-photo-placeholder">+</span>
+    </label>
+    <input type="file" id="ob-photo-input" accept="image/*" class="sr-only" />
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="ob-name" placeholder="What should Robin call you?" autocomplete="given-name" />
+    </div>
+    <div class="stretch"></div>
+    <button class="btn-primary" data-action="ob-next">Continue</button>
+  </div>
+
+  <!-- 4: Add People -->
+  <div class="ob-step" data-step="4">
+    <h2>People</h2>
+    <p class="sub">Anyone Robin should know about — family, team, friends.</p>
+    <div class="people-list" id="ob-people-list"></div>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="ob-person-name" placeholder="Their name" />
+    </div>
+    <div class="field">
+      <label>Relationship</label>
+      <input type="text" id="ob-person-rel" placeholder="Partner, mom, coworker..." />
+    </div>
+    <button class="btn-ghost" id="ob-add-person">+ Add person</button>
+    <div class="stretch"></div>
+    <button class="btn-primary" data-action="ob-next">Continue</button>
+  </div>
+
+  <!-- 5: Connect Calendar -->
+  <div class="ob-step" data-step="5">
+    <h2>Connect a calendar</h2>
+    <p class="sub">Robin reads your calendar so the morning brief is accurate.</p>
+    <div class="calendar-card" id="ob-gcal">
+      <div class="logo-circle">G</div>
+      <div class="copy">
+        <div class="title">Google Calendar</div>
+        <div class="sub" id="ob-gcal-sub">Read events from your primary calendar</div>
+      </div>
+      <button class="connect" id="ob-gcal-btn">Connect</button>
+    </div>
+    <p class="sub" style="margin-top:16px;font-size:13px">You can skip this and connect later in Settings.</p>
+    <div class="stretch"></div>
+    <button class="btn-primary" data-action="ob-next">Continue</button>
+  </div>
+
+  <!-- 6: Set Hours -->
+  <div class="ob-step" data-step="6">
+    <h2>Robin's hours</h2>
+    <p class="sub">When should Robin work for you?</p>
+    <div class="hours-grid">
+      <div class="hours-row">
+        <div class="name"><span class="t">Morning brief</span><span class="s">Today's overview</span></div>
+        <input type="time" id="ob-hours-brief" value="07:00" />
+      </div>
+      <div class="hours-row">
+        <div class="name"><span class="t">Evening digest</span><span class="s">What got done</span></div>
+        <input type="time" id="ob-hours-digest" value="17:45" />
+      </div>
+      <div class="hours-row">
+        <div class="name"><span class="t">Quiet hours</span><span class="s">No more pings</span></div>
+        <input type="time" id="ob-hours-quiet" value="21:00" />
+      </div>
+    </div>
+    <div class="stretch"></div>
+    <button class="btn-primary" data-action="ob-next">Continue</button>
+  </div>
+
+  <!-- 7: Done -->
+  <div class="ob-step ob-done" data-step="7">
+    <div class="stretch"></div>
+    <div class="check">✓</div>
+    <h2 style="text-align:center">You're set.</h2>
+    <p class="sub" style="text-align:center">Robin will check in tomorrow morning.</p>
+    <div class="stretch"></div>
+    <button class="btn-primary" data-action="ob-finish">Open Robin</button>
+  </div>
+</section>
+
+<!-- ── APP ──────────────────────────────────────────────────────── -->
+<section id="app" class="hidden">
+
+  <header class="statusbar">
+    <span id="clock" class="mono">--:--</span>
+    <span class="right">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </span>
+  </header>
+
+  <main class="view active" data-view="today">
+    <div class="view-inner with-addbar">
+      <div class="today-weather-row">
+        <div class="today-weather">
+          <div class="hilo" id="weather-hilo">--° / --°</div>
+          <div class="cond" id="weather-cond">Loading</div>
+        </div>
+        <div class="today-date-vert" id="today-date-vert">--- ---</div>
+      </div>
+      <div class="today-day mono" id="today-day">Today</div>
+
+      <div class="today-brief">
+        <div class="text" id="today-brief-text">Robin is preparing your brief…</div>
+        <button class="play" id="today-brief-play" aria-label="Play brief">▶</button>
+      </div>
+
+      <div class="section">
+        <div class="label">Schedule</div>
+        <div id="schedule-list"></div>
+      </div>
+
+      <div class="section">
+        <div class="label">To-do</div>
+        <div id="todo-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <main class="view" data-view="lists">
+    <div class="view-inner with-addbar">
+      <div class="label">Lists</div>
+      <h1 class="screen-title">Everything</h1>
+      <div class="divider"></div>
+      <div class="bucket-row" data-bucket="today">
+        <span class="name">Today</span>
+        <span class="meta"><span class="count" id="bucket-today">0</span><span class="chev">›</span></span>
+      </div>
+      <div class="bucket-row" data-bucket="soon">
+        <span class="name">Soon</span>
+        <span class="meta"><span class="count" id="bucket-soon">0</span><span class="chev">›</span></span>
+      </div>
+      <div class="bucket-row" data-bucket="someday">
+        <span class="name">Someday</span>
+        <span class="meta"><span class="count" id="bucket-someday">0</span><span class="chev">›</span></span>
+      </div>
+
+      <div class="section" style="margin-top:32px">
+        <div class="label">Containers</div>
+        <div id="containers-list" style="margin-top:8px"></div>
+        <button class="new-container-btn" id="new-container-btn">+ New container</button>
+      </div>
+    </div>
+  </main>
+
+  <main class="view" data-view="calendar">
+    <div class="view-inner">
+      <div class="label">Calendar</div>
+      <h1 class="month-title" id="cal-month">---</h1>
+      <div class="week-strip" id="week-strip"></div>
+      <div class="day-label" id="cal-day-label">---</div>
+      <div id="cal-events"></div>
+    </div>
+  </main>
+
+  <main class="view" data-view="capture">
+    <div class="capture-inner">
+      <div class="capture-status">Robin is listening</div>
+      <div class="waveform" id="waveform">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+      <div class="capture-transcript" id="capture-transcript"></div>
+      <div class="capture-chip" id="capture-chip">Pressed · Tagged</div>
+      <button class="capture-mic" id="capture-mic" aria-label="Hold to speak">●</button>
+      <div class="capture-hint">Hold to speak</div>
+    </div>
+  </main>
+
+  <main class="view" data-view="settings">
+    <div class="view-inner">
+      <div class="label">Settings</div>
+      <h1 class="screen-title">Robin.</h1>
+
+      <div class="settings-profile">
+        <div class="avatar" id="settings-avatar"><span id="settings-avatar-letter">R</span></div>
+        <div class="info">
+          <div class="name" id="settings-name">Robin user</div>
+          <div class="sub" id="settings-sub">Tap to edit profile</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="label">Connections</div>
+        <div class="conn-row" id="conn-gcal"><div class="left"><span class="name">Google Calendar</span></div><span class="status-dot"></span></div>
+        <div class="conn-row" id="conn-gmail"><div class="left"><span class="name">Gmail</span></div><span class="status-dot"></span></div>
+        <div class="conn-row" id="conn-contacts"><div class="left"><span class="name">Contacts</span></div><span class="status-dot"></span></div>
+      </div>
+
+      <div class="section">
+        <div class="label">Preferences</div>
+        <div class="link-row" data-link="hours"><div class="left"><span class="name">Robin's hours</span></div><span class="chev">›</span></div>
+        <div class="link-row" data-link="people"><div class="left"><span class="name">People</span></div><span class="chev">›</span></div>
+        <div class="link-row" data-link="notifications"><div class="left"><span class="name">Notifications</span></div><span class="chev">›</span></div>
+      </div>
+
+      <div class="version">Robin v1.0.0</div>
+    </div>
+  </main>
+
+  <div class="addbar" id="addbar">
+    <input type="text" id="addbar-input" placeholder="+ Add new" />
+    <button class="mic" id="addbar-mic" aria-label="Voice input">●</button>
+  </div>
+
+  <nav class="tabbar">
+    <button data-tab="today" class="active"><span class="tab-icon">○</span>Today</button>
+    <button data-tab="lists"><span class="tab-icon">≡</span>Lists</button>
+    <button data-tab="capture"><span class="tab-icon">●</span>Capture</button>
+    <button data-tab="calendar"><span class="tab-icon">▤</span>Calendar</button>
+    <button data-tab="settings"><span class="tab-icon">⚙</span>Settings</button>
+  </nav>
+</section>
+
+<!-- ── LIST DETAIL ──────────────────────────────────────────────── -->
+<section id="list-detail" class="hidden">
+  <div class="list-detail-inner">
+    <div class="back-row" id="list-back">
+      <span class="arrow">‹</span>
+      <span class="label" id="list-back-label">Back</span>
+    </div>
+    <div class="label" id="list-detail-section">List</div>
+    <h1 class="screen-title" id="list-detail-title">0 items</h1>
+    <div id="list-detail-rows"></div>
+  </div>
+  <div class="addbar">
+    <input type="text" id="list-detail-input" placeholder="+ Add item" />
+    <button class="mic" id="list-detail-mic" aria-label="Voice input">●</button>
+  </div>
+</section>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ── State + persistence ───────────────────────────────────────
+  var DEFAULT_STATE = {
+    onboarded: false,
+    profile: { name: '', photo: null, email: '' },
+    people: [],
+    hours: { brief: '07:00', digest: '17:45', quiet: '21:00' },
+    connections: { calendar: false, gmail: false, contacts: false },
+    schedule: [],
+    todos: [],
+    containers: [
+      { id: 'inbox', name: 'Inbox' },
+      { id: 'work',  name: 'Work' },
+      { id: 'home',  name: 'Home' }
+    ],
+    brief: '',
+    weather: null,
+    activeList: null,
+    activeListType: null
+  };
+
+  var STATE_KEY = 'robin-state-v1';
+  var state;
+  try {
+    var raw = localStorage.getItem(STATE_KEY);
+    state = raw ? Object.assign({}, DEFAULT_STATE, JSON.parse(raw)) : Object.assign({}, DEFAULT_STATE);
+  } catch (e) {
+    state = Object.assign({}, DEFAULT_STATE);
+  }
+  function persist() {
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+
+  // ── DOM helpers ───────────────────────────────────────────────
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
+  function el(tag, props, children) {
+    var n = document.createElement(tag);
+    if (props) Object.keys(props).forEach(function(k){
+      if (k === 'class') n.className = props[k];
+      else if (k === 'text') n.textContent = props[k];
+      else if (k.indexOf('on') === 0 && typeof props[k] === 'function') n.addEventListener(k.slice(2).toLowerCase(), props[k]);
+      else if (k === 'data') Object.keys(props.data).forEach(function(d){ n.dataset[d] = props.data[d]; });
+      else n.setAttribute(k, props[k]);
+    });
+    (children || []).forEach(function(c){ if (c) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return n;
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  // ── Service worker ────────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('/sw.js').catch(function(){ /* no SW yet — fine */ });
+    });
+  }
+
+  // ── Onboarding ────────────────────────────────────────────────
+  var OB_STEPS = 7;
+  var obStep = 1;
+  var obPeopleBuf = [];
+
+  function renderObProgress() {
+    var p = $('#ob-progress');
+    p.innerHTML = '';
+    for (var i = 1; i <= OB_STEPS; i++) {
+      var s = document.createElement('span');
+      s.className = 'seg' + (i <= obStep ? ' done' : '');
+      p.appendChild(s);
+    }
+  }
+  function showObStep(n) {
+    obStep = n;
+    $$('.ob-step').forEach(function(s){ s.classList.remove('active'); });
+    var cur = $('.ob-step[data-step="' + n + '"]');
+    if (cur) cur.classList.add('active');
+    renderObProgress();
+  }
+  function obNext() {
+    // Validate current step
+    if (obStep === 2) {
+      var em = $('#ob-email').value.trim();
+      var pw = $('#ob-password').value;
+      if (!em) { toast('Email please'); return; }
+      if (!pw) { toast('Password please'); return; }
+      state.profile.email = em;
+    }
+    if (obStep === 3) {
+      var nm = $('#ob-name').value.trim();
+      if (!nm) { toast('What should Robin call you?'); return; }
+      state.profile.name = nm;
+    }
+    if (obStep === 4) {
+      state.people = obPeopleBuf.slice();
+    }
+    if (obStep === 6) {
+      state.hours = {
+        brief:  $('#ob-hours-brief').value  || '07:00',
+        digest: $('#ob-hours-digest').value || '17:45',
+        quiet:  $('#ob-hours-quiet').value  || '21:00'
+      };
+    }
+    persist();
+    if (obStep < OB_STEPS) showObStep(obStep + 1);
+  }
+  function obFinish() {
+    state.onboarded = true;
+    persist();
+    $('#onboarding').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    mountApp();
+  }
+  function renderObPeople() {
+    var list = $('#ob-people-list');
+    list.innerHTML = '';
+    obPeopleBuf.forEach(function(p, i){
+      var row = el('div', { class: 'people-row' }, [
+        el('div', { class: 'avatar', text: (p.name || '?').charAt(0).toUpperCase() }),
+        el('div', { class: 'info' }, [
+          el('div', { class: 'name', text: p.name }),
+          el('div', { class: 'rel',  text: p.relationship || '—' })
+        ]),
+        el('button', { class: 'rm', text: '×', onclick: function(){ obPeopleBuf.splice(i,1); renderObPeople(); } })
+      ]);
+      list.appendChild(row);
+    });
+  }
+
+  // Onboarding bindings
+  $$('button[data-action="ob-next"]').forEach(function(b){ b.addEventListener('click', obNext); });
+  $('button[data-action="ob-finish"]').addEventListener('click', obFinish);
+
+  $('#ob-photo-input').addEventListener('change', function(e){
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var rdr = new FileReader();
+    rdr.onload = function(ev){
+      state.profile.photo = ev.target.result;
+      var picker = $('#ob-photo-picker');
+      picker.innerHTML = '';
+      var im = document.createElement('img');
+      im.src = ev.target.result;
+      picker.appendChild(im);
+      persist();
+    };
+    rdr.readAsDataURL(f);
+  });
+
+  $('#ob-add-person').addEventListener('click', function(){
+    var nm = $('#ob-person-name').value.trim();
+    var rl = $('#ob-person-rel').value.trim();
+    if (!nm) { toast('Name please'); return; }
+    obPeopleBuf.push({ name: nm, relationship: rl });
+    $('#ob-person-name').value = '';
+    $('#ob-person-rel').value = '';
+    renderObPeople();
+  });
+
+  $('#ob-gcal-btn').addEventListener('click', function(){
+    // UI-only connection toggle. Real OAuth would replace this.
+    state.connections.calendar = true;
+    $('#ob-gcal').classList.add('connected');
+    $('#ob-gcal-btn').textContent = 'Connected';
+    $('#ob-gcal-sub').textContent = 'Reading from primary calendar';
+    persist();
+    toast('Calendar connected (demo)');
+  });
+
+  // ── Clock ─────────────────────────────────────────────────────
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function fmtTime12(d) {
+    var h = d.getHours();
+    var m = d.getMinutes();
+    var ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + pad(m) + ' ' + ap;
+  }
+  function tickClock() {
+    var now = new Date();
+    var c = $('#clock');
+    if (c) c.textContent = fmtTime12(now);
+  }
+
+  // ── Weather ───────────────────────────────────────────────────
+  function fetchWeather() {
+    var setUI = function(hilo, cond) {
+      var h = $('#weather-hilo'); var c = $('#weather-cond');
+      if (h) h.textContent = hilo;
+      if (c) c.textContent = cond;
+    };
+    var go = function(lat, lon) {
+      fetch('/api/weather?lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lon))
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          if (!data || !data.main) { setUI('--° / --°', 'Offline'); return; }
+          var hi = Math.round(data.main.temp_max || data.main.temp || 0);
+          var lo = Math.round(data.main.temp_min || data.main.temp || 0);
+          var cond = (data.weather && data.weather[0] && data.weather[0].main) || '—';
+          setUI(hi + '° / ' + lo + '°', cond);
+          state.weather = { hi: hi, lo: lo, cond: cond, ts: Date.now() };
+          persist();
+        })
+        .catch(function(){ setUI('--° / --°', 'Offline'); });
+    };
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(pos){ go(pos.coords.latitude, pos.coords.longitude); },
+        function(){ go(34.0522, -118.2437); }, // LA default
+        { timeout: 4000, maximumAge: 600000 }
+      );
+    } else {
+      go(34.0522, -118.2437);
+    }
+  }
+
+  // ── Today render ──────────────────────────────────────────────
+  var WEEKDAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  var WEEKDAYS_FULL = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+  var MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  var MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  function renderToday() {
+    var now = new Date();
+    var dayName = WEEKDAYS_FULL[now.getDay()];
+    $('#today-day').textContent = dayName.toLowerCase();
+    $('#today-date-vert').textContent = MONTHS[now.getMonth()] + ' ' + now.getDate();
+
+    var sched = $('#schedule-list');
+    sched.innerHTML = '';
+    if (!state.schedule.length) {
+      sched.appendChild(el('div', { class: 'empty', text: 'Nothing scheduled.' }));
+    } else {
+      state.schedule.slice().sort(function(a,b){
+        return (a.time || '').localeCompare(b.time || '');
+      }).forEach(function(s){
+        sched.appendChild(el('div', { class: 'row' }, [
+          el('span', { class: 'time mono', text: s.time || '--:--' }),
+          el('span', { class: 'row-label', text: s.label || '' }),
+          el('span', { class: 'row-icon', text: s.icon || '•' })
+        ]));
+      });
+    }
+
+    var td = $('#todo-list');
+    td.innerHTML = '';
+    var todayTodos = state.todos.filter(function(t){ return t.bucket !== 'soon' && t.bucket !== 'someday'; });
+    if (!todayTodos.length) {
+      td.appendChild(el('div', { class: 'empty', text: 'Inbox zero.' }));
+    } else {
+      todayTodos.forEach(function(t){
+        var row = el('div', { class: 'row' + (t.done ? ' done' : '') }, [
+          el('span', { class: 'check' }),
+          el('span', { class: 'row-label', text: t.label }),
+          el('span', { class: 'row-icon', text: t.icon || '•' })
+        ]);
+        row.addEventListener('click', function(){ toggleTodo(t.id); });
+        td.appendChild(row);
+      });
+    }
+  }
+
+  // ── Brief generation ──────────────────────────────────────────
+  function buildBriefPrompt() {
+    var name = state.profile.name || 'friend';
+    var sched = state.schedule.map(function(s){ return '- ' + s.time + ' ' + s.label; }).join('\n') || '(no events)';
+    var todos = state.todos.filter(function(t){return !t.done && t.bucket!=='soon'&&t.bucket!=='someday';})
+      .map(function(t){ return '- ' + t.label; }).join('\n') || '(none)';
+    var w = state.weather ? (state.weather.cond + ', ' + state.weather.hi + '/' + state.weather.lo) : 'unknown';
+    return 'Schedule:\n' + sched + '\n\nTo-do:\n' + todos + '\n\nWeather: ' + w + '\n\nName: ' + name;
+  }
+  function generateBrief() {
+    var sys = "You are Robin, a serious tool. Write a 2-3 sentence morning brief addressed to the user by first name. Be terse, useful, no filler, no emoji, no exclamation marks. Mention the most pressing schedule item and one to-do if relevant. If nothing is scheduled, say so plainly and suggest one thing.";
+    $('#today-brief-text').textContent = 'Robin is preparing your brief…';
+    fetch('/api/claude', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: sys,
+        max_tokens: 240,
+        messages: [{ role: 'user', content: buildBriefPrompt() }]
+      })
+    }).then(function(r){ return r.json(); })
+      .then(function(data){
+        var txt = (data && data.content && data.content[0] && data.content[0].text) || '';
+        if (txt) {
+          state.brief = txt;
+          persist();
+          $('#today-brief-text').textContent = txt;
+        } else {
+          fallbackBrief();
+        }
+      })
+      .catch(fallbackBrief);
+  }
+  function fallbackBrief() {
+    var name = state.profile.name || 'there';
+    var n = state.todos.filter(function(t){return !t.done;}).length;
+    var s = state.schedule.length;
+    var line = 'Morning, ' + name + '. ';
+    if (s) line += 'You have ' + s + ' thing' + (s === 1 ? '' : 's') + ' scheduled. ';
+    else line += 'Nothing on the calendar. ';
+    if (n) line += n + ' open to-do' + (n === 1 ? '' : 's') + '.';
+    else line += 'Inbox is clear.';
+    $('#today-brief-text').textContent = line;
+    state.brief = line;
+    persist();
+  }
+
+  // ── Brief playback ────────────────────────────────────────────
+  var speaking = false;
+  function playBrief() {
+    if (!('speechSynthesis' in window)) { toast('Speech not supported here'); return; }
+    var txt = state.brief || $('#today-brief-text').textContent;
+    if (!txt) return;
+    var btn = $('#today-brief-play');
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      btn.classList.remove('speaking'); btn.textContent = '▶';
+      speaking = false; return;
+    }
+    var u = new SpeechSynthesisUtterance(txt);
+    u.rate = 1.0; u.pitch = 1.0;
+    u.onend = function(){ speaking = false; btn.classList.remove('speaking'); btn.textContent = '▶'; };
+    u.onerror = u.onend;
+    btn.classList.add('speaking'); btn.textContent = '⏸'; speaking = true;
+    window.speechSynthesis.speak(u);
+  }
+
+  // ── Todos / schedule mutations ────────────────────────────────
+  function toggleTodo(id) {
+    state.todos.forEach(function(t){ if (t.id === id) t.done = !t.done; });
+    persist();
+    renderToday();
+    if (state.activeList) renderListDetail();
+  }
+  function addTodo(label, opts) {
+    opts = opts || {};
+    if (!label || !label.trim()) return null;
+    var t = {
+      id: uid(),
+      label: label.trim(),
+      done: false,
+      bucket: opts.bucket || 'today',
+      containerId: opts.containerId || null,
+      icon: opts.icon || '•',
+      createdAt: Date.now()
+    };
+    state.todos.unshift(t);
+    persist();
+    return t;
+  }
+  function addSchedule(time, label, icon) {
+    var s = { id: uid(), time: time, label: label, icon: icon || '•' };
+    state.schedule.push(s);
+    persist();
+    return s;
+  }
+  function addContainer(name) {
+    var c = { id: uid(), name: name.trim() };
+    state.containers.push(c);
+    persist();
+    return c;
+  }
+
+  // ── Lists render ──────────────────────────────────────────────
+  function renderLists() {
+    var t = state.todos;
+    $('#bucket-today').textContent   = t.filter(function(x){return x.bucket === 'today'   && !x.done;}).length;
+    $('#bucket-soon').textContent    = t.filter(function(x){return x.bucket === 'soon'    && !x.done;}).length;
+    $('#bucket-someday').textContent = t.filter(function(x){return x.bucket === 'someday' && !x.done;}).length;
+
+    var c = $('#containers-list');
+    c.innerHTML = '';
+    state.containers.forEach(function(ct){
+      var count = state.todos.filter(function(x){ return x.containerId === ct.id && !x.done; }).length;
+      var row = el('div', { class: 'container-row' }, [
+        el('span', { class: 'name', text: ct.name }),
+        el('span', { class: 'meta' }, [
+          el('span', { class: 'count mono', text: String(count) }),
+          el('span', { class: 'chev', text: '›' })
+        ])
+      ]);
+      row.addEventListener('click', function(){ openList('container', ct.id, ct.name); });
+      c.appendChild(row);
+    });
+  }
+
+  // ── List detail ───────────────────────────────────────────────
+  function openList(type, key, title) {
+    state.activeListType = type;
+    state.activeList = key;
+    $('#list-detail-section').textContent = type === 'container' ? 'Container' : 'List';
+    $('#list-detail-title').textContent = title;
+    $('#list-back-label').textContent = type === 'container' ? 'Lists' : 'Lists';
+    renderListDetail();
+    $('#list-detail').classList.remove('hidden');
+  }
+  function closeList() {
+    state.activeList = null;
+    state.activeListType = null;
+    $('#list-detail').classList.add('hidden');
+  }
+  function listDetailFilter() {
+    if (state.activeListType === 'container') return function(t){ return t.containerId === state.activeList; };
+    return function(t){ return t.bucket === state.activeList; };
+  }
+  function renderListDetail() {
+    var rows = $('#list-detail-rows');
+    rows.innerHTML = '';
+    var items = state.todos.filter(listDetailFilter());
+    $('#list-detail-title').textContent = items.filter(function(t){return !t.done;}).length + ' items';
+    if (!items.length) {
+      rows.appendChild(el('div', { class: 'empty', text: 'Nothing here yet.' }));
+      return;
+    }
+    items.forEach(function(t){
+      var row = el('div', { class: 'row' + (t.done ? ' done' : '') }, [
+        el('span', { class: 'check' }),
+        el('span', { class: 'row-label', text: t.label }),
+        el('span', { class: 'row-icon', text: t.icon || '•' })
+      ]);
+      row.addEventListener('click', function(){ toggleTodo(t.id); });
+      rows.appendChild(row);
+    });
+  }
+  $('#list-back').addEventListener('click', closeList);
+  $('#list-detail-input').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') {
+      var v = e.target.value;
+      if (state.activeListType === 'container') {
+        addTodo(v, { containerId: state.activeList });
+      } else {
+        addTodo(v, { bucket: state.activeList });
       }
-    </script>
-  </body>
+      e.target.value = '';
+      renderListDetail();
+      renderLists();
+      renderToday();
+    }
+  });
+  $('#list-detail-mic').addEventListener('click', function(){
+    switchTab('capture');
+  });
+
+  // ── Calendar render ───────────────────────────────────────────
+  function renderCalendar() {
+    var now = new Date();
+    $('#cal-month').textContent = MONTHS_FULL[now.getMonth()].toLowerCase() + '.';
+    $('#cal-day-label').textContent = WEEKDAYS_FULL[now.getDay()] + ' · ' + now.getDate();
+
+    // Build 7-day strip centered on today
+    var strip = $('#week-strip');
+    strip.innerHTML = '';
+    var todayDow = now.getDay();
+    var start = new Date(now);
+    start.setDate(now.getDate() - todayDow);
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(start);
+      d.setDate(start.getDate() + i);
+      var isToday = d.toDateString() === now.toDateString();
+      var dEl = el('div', { class: 'week-day' + (isToday ? ' today' : '') }, [
+        el('span', { class: 'dow', text: WEEKDAYS[d.getDay()] }),
+        el('span', { class: 'num', text: String(d.getDate()) })
+      ]);
+      strip.appendChild(dEl);
+    }
+
+    var evs = $('#cal-events');
+    evs.innerHTML = '';
+    if (!state.schedule.length) {
+      evs.appendChild(el('div', { class: 'empty', text: 'No events.' }));
+    } else {
+      state.schedule.slice().sort(function(a,b){ return (a.time||'').localeCompare(b.time||''); }).forEach(function(s){
+        evs.appendChild(el('div', { class: 'row' }, [
+          el('span', { class: 'time mono', text: s.time || '--:--' }),
+          el('span', { class: 'row-label', text: s.label || '' }),
+          el('span', { class: 'row-icon', text: s.icon || '•' })
+        ]));
+      });
+    }
+  }
+
+  // ── Settings render ───────────────────────────────────────────
+  function renderSettings() {
+    var nameEl = $('#settings-name'); if (nameEl) nameEl.textContent = state.profile.name || 'Robin user';
+    var subEl = $('#settings-sub');   if (subEl)  subEl.textContent  = state.profile.email || 'Tap to edit profile';
+    var av = $('#settings-avatar');
+    av.innerHTML = '';
+    if (state.profile.photo) {
+      var im = document.createElement('img'); im.src = state.profile.photo; av.appendChild(im);
+    } else {
+      av.appendChild(el('span', { text: (state.profile.name || 'R').charAt(0).toUpperCase() }));
+    }
+    function setConn(id, on) {
+      var r = $(id); if (!r) return;
+      if (on) r.classList.remove('off'); else r.classList.add('off');
+    }
+    setConn('#conn-gcal', state.connections.calendar);
+    setConn('#conn-gmail', state.connections.gmail);
+    setConn('#conn-contacts', state.connections.contacts);
+  }
+
+  // ── Tab switching ─────────────────────────────────────────────
+  function switchTab(name) {
+    $$('.view').forEach(function(v){ v.classList.remove('active'); });
+    var view = $('.view[data-view="' + name + '"]');
+    if (view) view.classList.add('active');
+    $$('.tabbar button').forEach(function(b){ b.classList.toggle('active', b.dataset.tab === name); });
+
+    if (name === 'today') renderToday();
+    if (name === 'lists') renderLists();
+    if (name === 'calendar') renderCalendar();
+    if (name === 'settings') renderSettings();
+    if (name === 'capture') {/* capture view manages itself */}
+
+    // Show addbar everywhere except capture/calendar/settings
+    var addbar = $('#addbar');
+    if (name === 'today' || name === 'lists') addbar.style.display = 'flex';
+    else addbar.style.display = 'none';
+  }
+  $$('.tabbar button').forEach(function(b){ b.addEventListener('click', function(){ switchTab(b.dataset.tab); }); });
+
+  // ── Lists screen click-throughs ───────────────────────────────
+  document.addEventListener('click', function(e){
+    var bucket = e.target.closest && e.target.closest('.bucket-row');
+    if (bucket && bucket.dataset.bucket) {
+      var b = bucket.dataset.bucket;
+      var label = b.charAt(0).toUpperCase() + b.slice(1);
+      openList('bucket', b, label);
+    }
+  });
+  $('#new-container-btn').addEventListener('click', function(){
+    var name = window.prompt('Container name');
+    if (name && name.trim()) {
+      addContainer(name);
+      renderLists();
+      toast('Created');
+    }
+  });
+
+  // ── Sticky add bar ────────────────────────────────────────────
+  $('#addbar-input').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') {
+      var v = e.target.value;
+      if (v && v.trim()) {
+        addTodo(v);
+        e.target.value = '';
+        renderToday();
+        renderLists();
+        toast('Added');
+      }
+    }
+  });
+  $('#addbar-mic').addEventListener('click', function(){ switchTab('capture'); });
+
+  // ── Voice capture ─────────────────────────────────────────────
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var recog = null;
+  var capturing = false;
+  var captureBars = $$('#waveform .bar');
+  var waveTimer = null;
+  function animateWave() {
+    if (waveTimer) return;
+    waveTimer = setInterval(function(){
+      captureBars.forEach(function(b){
+        var h = 8 + Math.round(Math.random() * 56);
+        b.style.height = h + 'px';
+      });
+    }, 90);
+  }
+  function stopWave() {
+    if (waveTimer) { clearInterval(waveTimer); waveTimer = null; }
+    captureBars.forEach(function(b){ b.style.height = '12px'; });
+  }
+
+  function startCapture() {
+    if (capturing) return;
+    capturing = true;
+    $('#capture-mic').classList.add('listening');
+    $('#capture-chip').classList.add('show');
+    animateWave();
+    $('#capture-transcript').textContent = '';
+    if (!SR) {
+      $('#capture-transcript').textContent = 'Voice not supported on this device. Try typing in the add bar.';
+      return;
+    }
+    try {
+      recog = new SR();
+      recog.continuous = false;
+      recog.interimResults = true;
+      recog.lang = 'en-US';
+      var finalText = '';
+      recog.onresult = function(ev){
+        var interim = '';
+        for (var i = ev.resultIndex; i < ev.results.length; i++) {
+          var r = ev.results[i];
+          if (r.isFinal) finalText += r[0].transcript;
+          else interim += r[0].transcript;
+        }
+        $('#capture-transcript').textContent = (finalText + ' ' + interim).trim();
+      };
+      recog.onerror = function(ev){
+        $('#capture-transcript').textContent = 'Mic error: ' + ev.error;
+        stopCapture();
+      };
+      recog.onend = function(){
+        if (finalText.trim()) {
+          routeUtterance(finalText.trim());
+        }
+        stopCapture();
+      };
+      recog.start();
+    } catch (e) {
+      $('#capture-transcript').textContent = 'Mic unavailable';
+      stopCapture();
+    }
+  }
+  function stopCapture() {
+    capturing = false;
+    $('#capture-mic').classList.remove('listening');
+    stopWave();
+    try { if (recog) recog.stop(); } catch (e) {}
+  }
+  var captureBtn = $('#capture-mic');
+  ['mousedown','touchstart'].forEach(function(ev){
+    captureBtn.addEventListener(ev, function(e){ e.preventDefault(); startCapture(); });
+  });
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(function(ev){
+    captureBtn.addEventListener(ev, function(e){ e.preventDefault(); if (capturing) stopCapture(); });
+  });
+
+  // ── Voice routing via /api/claude ─────────────────────────────
+  function routeUtterance(text) {
+    var sys = "You are Robin's command router. Classify the user's voice note and respond with ONLY a single JSON object — no prose, no markdown, no code fences. Schema: {\"type\":\"schedule\"|\"todo\"|\"list\"|\"note\",\"time\":\"HH:MM\"|null,\"label\":string,\"icon\":string|null,\"listName\":string|null}. type=\"schedule\" when the user mentions a time. type=\"list\" when they ask to create a new list/container. type=\"todo\" for anything else actionable. type=\"note\" if it's just a thought.";
+    $('#capture-transcript').textContent = text + ' …';
+    fetch('/api/claude', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: sys,
+        max_tokens: 220,
+        messages: [{ role: 'user', content: text }]
+      })
+    }).then(function(r){ return r.json(); })
+      .then(function(data){
+        var raw = (data && data.content && data.content[0] && data.content[0].text) || '';
+        var parsed = null;
+        try {
+          var jsonMatch = raw.match(/\{[\s\S]*\}/);
+          parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+        } catch (e) { parsed = null; }
+        if (!parsed) { fallbackRoute(text); return; }
+        applyRouted(parsed, text);
+      })
+      .catch(function(){ fallbackRoute(text); });
+  }
+  function fallbackRoute(text) {
+    // Naive heuristic — anything with a time becomes schedule, else todo.
+    var timeMatch = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i);
+    if (timeMatch) {
+      var h = parseInt(timeMatch[1], 10);
+      var m = parseInt(timeMatch[2] || '0', 10);
+      var ap = (timeMatch[3] || '').toLowerCase();
+      if (ap === 'pm' && h < 12) h += 12;
+      if (ap === 'am' && h === 12) h = 0;
+      addSchedule(pad(h) + ':' + pad(m), text);
+      toast('Scheduled');
+    } else {
+      addTodo(text);
+      toast('Added');
+    }
+    renderToday();
+    renderLists();
+    switchTab('today');
+  }
+  function applyRouted(p, originalText) {
+    if (p.type === 'schedule' && p.time) {
+      addSchedule(p.time, p.label || originalText, p.icon || '•');
+      toast('Scheduled · ' + p.time);
+    } else if (p.type === 'list' && p.listName) {
+      addContainer(p.listName);
+      toast('List created');
+    } else if (p.type === 'todo') {
+      addTodo(p.label || originalText, { icon: p.icon || '•' });
+      toast('Added');
+    } else {
+      addTodo(p.label || originalText);
+      toast('Captured');
+    }
+    renderToday();
+    renderLists();
+    setTimeout(function(){ switchTab('today'); }, 600);
+  }
+
+  // ── Brief play binding ────────────────────────────────────────
+  $('#today-brief-play').addEventListener('click', playBrief);
+
+  // ── Settings link rows ────────────────────────────────────────
+  $$('.link-row').forEach(function(r){
+    r.addEventListener('click', function(){
+      toast(r.dataset.link + ' — coming soon');
+    });
+  });
+  $$('.conn-row').forEach(function(r){
+    r.addEventListener('click', function(){
+      var id = r.id;
+      var k = id === 'conn-gcal' ? 'calendar' : id === 'conn-gmail' ? 'gmail' : 'contacts';
+      state.connections[k] = !state.connections[k];
+      persist();
+      renderSettings();
+    });
+  });
+
+  // ── Mount ─────────────────────────────────────────────────────
+  function mountApp() {
+    tickClock();
+    setInterval(tickClock, 15000);
+    fetchWeather();
+    renderToday();
+    renderLists();
+    renderSettings();
+    generateBrief();
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────
+  function boot() {
+    renderObProgress();
+    if (state.onboarded) {
+      $('#onboarding').classList.add('hidden');
+      $('#app').classList.remove('hidden');
+      mountApp();
+    } else {
+      $('#app').classList.add('hidden');
+      $('#onboarding').classList.remove('hidden');
+      // hydrate from any partial state
+      if (state.profile.email) $('#ob-email').value = state.profile.email;
+      if (state.profile.name)  $('#ob-name').value  = state.profile.name;
+      if (state.profile.photo) {
+        var picker = $('#ob-photo-picker');
+        picker.innerHTML = '';
+        var im = document.createElement('img'); im.src = state.profile.photo; picker.appendChild(im);
+      }
+      $('#ob-hours-brief').value  = state.hours.brief;
+      $('#ob-hours-digest').value = state.hours.digest;
+      $('#ob-hours-quiet').value  = state.hours.quiet;
+      if (state.connections.calendar) {
+        $('#ob-gcal').classList.add('connected');
+        $('#ob-gcal-btn').textContent = 'Connected';
+      }
+      obPeopleBuf = state.people.slice();
+      renderObPeople();
+      tickClock();
+      setInterval(tickClock, 15000);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', boot);
+  if (document.readyState !== 'loading') boot();
+
+})();
+</script>
+</body>
 </html>
