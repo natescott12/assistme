@@ -665,7 +665,7 @@
       color: #FFFFFF;
     }
     .capture-transcript:empty::before {
-      content: 'Hold the button to speak';
+      content: 'Tap the button to speak';
       color: rgba(255,255,255,0.35); font-size: 14px;
     }
     .capture-chip {
@@ -692,6 +692,29 @@
     @keyframes pulse-ring {
       0% { transform: scale(0.9); opacity: 1; }
       100% { transform: scale(1.6); opacity: 0; }
+    }
+    .capture-fallback {
+      width: 100%; margin-top: 24px;
+      display: flex; gap: 8px;
+    }
+    .capture-fallback input {
+      flex: 1; height: 44px; padding: 0 16px;
+      background: rgba(255,255,255,0.08); color: #FFFFFF;
+      border: 1px solid rgba(255,255,255,0.18); border-radius: 22px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+    }
+    .capture-fallback input::placeholder { color: rgba(255,255,255,0.4); }
+    .capture-fallback button {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--accent); color: #0A0A0A;
+      font-size: 18px;
+    }
+    .capture-error {
+      margin-top: 12px;
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      font-weight: 700; letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--error);
+      min-height: 14px;
     }
 
     /* ── iOS-style permission modal ───────────────────────────── */
@@ -1138,7 +1161,12 @@ Robin can nudge you.</h1>
     </div>
     <div class="capture-transcript" id="capture-transcript"></div>
     <div class="capture-chip" id="capture-chip">Pressed · Tagged</div>
-    <button class="capture-mic" id="capture-mic" aria-label="Hold to speak">●</button>
+    <button class="capture-mic" id="capture-mic" aria-label="Tap to speak">●</button>
+    <div class="capture-error" id="capture-error"></div>
+    <div class="capture-fallback">
+      <input type="text" id="capture-text-input" placeholder="or type instead..." autocomplete="off" />
+      <button id="capture-text-submit" aria-label="Submit">↵</button>
+    </div>
   </div>
 </section>
 
@@ -1809,8 +1837,33 @@ Robin can nudge you.</h1>
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var recog = null;
   var capturing = false;
+  var abortedRetryUsed = false;
+  var micPrimed = false;
+  var micPrimingPromise = null;
   var captureBars = $$('#waveform .bar');
   var waveTimer = null;
+
+  // Prime mic permission once via getUserMedia. On iOS Safari this triggers
+  // the native permission prompt early so that the synchronous SR.start()
+  // inside a click handler doesn't fail. Stream is released immediately.
+  function primeMic() {
+    if (micPrimed) return Promise.resolve();
+    if (micPrimingPromise) return micPrimingPromise;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      return Promise.reject(new Error('no-media-devices'));
+    }
+    micPrimingPromise = navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function(stream){
+        stream.getTracks().forEach(function(t){ try { t.stop(); } catch (e) {} });
+        micPrimed = true;
+      })
+      .catch(function(err){
+        micPrimingPromise = null;
+        throw err;
+      });
+    return micPrimingPromise;
+  }
+
   function animateWave() {
     if (waveTimer) return;
     waveTimer = setInterval(function(){
@@ -1824,31 +1877,67 @@ Robin can nudge you.</h1>
     if (waveTimer) { clearInterval(waveTimer); waveTimer = null; }
     captureBars.forEach(function(b){ b.style.height = '12px'; });
   }
+  function setCaptureError(msg) {
+    var e = $('#capture-error'); if (e) e.textContent = msg || '';
+  }
   function openCapture() {
     $('#capture-overlay').classList.remove('hidden');
     $('#capture-transcript').textContent = '';
+    setCaptureError('');
+    abortedRetryUsed = false;
+    // Prime mic permission early so the next click-to-start finds it granted.
+    primeMic().catch(function(err){
+      var name = err && err.name;
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setCaptureError('Mic blocked — type instead');
+      } else if (name !== 'no-media-devices' && err && err.message !== 'no-media-devices') {
+        // Non-fatal: SR.start() may still work, and text fallback is available.
+        console.warn('[capture] primeMic failed:', err);
+      }
+    });
   }
   function closeCapture() {
     if (capturing) stopCapture();
     $('#capture-overlay').classList.add('hidden');
+    setCaptureError('');
   }
   $('#capture-close').addEventListener('click', closeCapture);
 
+  // Friendly text per SR error code.
+  function srErrorMessage(code) {
+    switch (code) {
+      case 'no-speech':            return 'Didn\'t catch that — try again';
+      case 'audio-capture':        return 'No mic detected';
+      case 'not-allowed':          return 'Mic blocked — enable in Settings';
+      case 'service-not-allowed':  return 'Voice service not allowed';
+      case 'network':              return 'Network error — try again';
+      case 'aborted':              return 'Voice cancelled';
+      case 'bad-grammar':          return 'Couldn\'t parse audio';
+      case 'language-not-supported': return 'Language not supported';
+      default:                     return 'Mic error: ' + (code || 'unknown');
+    }
+  }
+
+  // startCapture MUST be invoked synchronously inside a user gesture
+  // (click/touchend) so iOS Safari accepts the SpeechRecognition start.
   function startCapture() {
     if (capturing) return;
+    if (!SR) {
+      setCaptureError('Voice not supported — type below');
+      return;
+    }
     capturing = true;
+    setCaptureError('');
     $('#capture-mic').classList.add('listening');
     $('#capture-chip').classList.add('show');
     animateWave();
     $('#capture-transcript').textContent = '';
-    if (!SR) {
-      $('#capture-transcript').textContent = 'Voice not supported on this device.';
-      return;
-    }
+    var finalText = '';
     try {
       recog = new SR();
-      recog.continuous = false; recog.interimResults = true; recog.lang = 'en-US';
-      var finalText = '';
+      recog.continuous = false;
+      recog.interimResults = true;
+      recog.lang = 'en-US';
       recog.onresult = function(ev){
         var interim = '';
         for (var i = ev.resultIndex; i < ev.results.length; i++) {
@@ -1859,7 +1948,20 @@ Robin can nudge you.</h1>
         $('#capture-transcript').textContent = (finalText + ' ' + interim).trim();
       };
       recog.onerror = function(ev){
-        $('#capture-transcript').textContent = 'Mic error: ' + ev.error;
+        var code = ev && ev.error;
+        // Auto-retry once on "aborted" — iOS Safari sometimes drops the
+        // recognition stream during permission grant or session resume.
+        if (code === 'aborted' && !abortedRetryUsed) {
+          abortedRetryUsed = true;
+          console.log('[capture] aborted — retrying once');
+          stopCapture();
+          // Defer to next tick to fully tear down the old recognizer,
+          // then start again. The click gesture context should still be
+          // valid since we're invoked from within the same task.
+          setTimeout(function(){ startCapture(); }, 60);
+          return;
+        }
+        setCaptureError(srErrorMessage(code));
         stopCapture();
       };
       recog.onend = function(){
@@ -1868,7 +1970,8 @@ Robin can nudge you.</h1>
       };
       recog.start();
     } catch (e) {
-      $('#capture-transcript').textContent = 'Mic unavailable';
+      setCaptureError('Mic unavailable — type below');
+      console.warn('[capture] start threw:', e);
       stopCapture();
     }
   }
@@ -1876,14 +1979,31 @@ Robin can nudge you.</h1>
     capturing = false;
     $('#capture-mic').classList.remove('listening');
     stopWave();
+    try { if (recog) recog.abort(); } catch (e) {}
     try { if (recog) recog.stop(); } catch (e) {}
   }
-  var captureBtn = $('#capture-mic');
-  ['mousedown','touchstart'].forEach(function(ev){
-    captureBtn.addEventListener(ev, function(e){ e.preventDefault(); startCapture(); });
+
+  // Click-based (tap-to-toggle) — keeps SR.start() inside a direct user
+  // gesture on iOS, where touchstart can be too early and async handlers
+  // lose the gesture context entirely.
+  $('#capture-mic').addEventListener('click', function(e){
+    e.preventDefault();
+    if (capturing) stopCapture();
+    else startCapture();
   });
-  ['mouseup','mouseleave','touchend','touchcancel'].forEach(function(ev){
-    captureBtn.addEventListener(ev, function(e){ e.preventDefault(); if (capturing) stopCapture(); });
+
+  // Text fallback — always available, also routes through Claude.
+  function submitCaptureText() {
+    var inp = $('#capture-text-input');
+    var v = (inp.value || '').trim();
+    if (!v) return;
+    inp.value = '';
+    setCaptureError('');
+    routeUtterance(v);
+  }
+  $('#capture-text-submit').addEventListener('click', submitCaptureText);
+  $('#capture-text-input').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); submitCaptureText(); }
   });
 
   // ── Voice routing via /api/claude ─────────────────────────────
