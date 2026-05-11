@@ -27,10 +27,10 @@
       --error: #CC3333;
       --green: #2BB673;
       --safe-top: env(safe-area-inset-top);
-      --safe-bottom: env(safe-area-inset-bottom);
+      --safe-bottom: env(safe-area-inset-bottom, 20px);
       --statusbar-h: 44px;
-      --tabbar-h: 72px;
-      --addbar-h: 64px;
+      --tabbar-h: 60px;
+      --addbar-h: 60px;
       --pad-x: 24px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -46,6 +46,15 @@
     button, input, textarea { font-family: inherit; color: inherit; background: none; border: none; outline: none; }
     button { cursor: pointer; }
     input, textarea { user-select: text; -webkit-user-select: text; }
+
+    /* iOS PWA viewport: 100dvh gives the actual visible height under
+       standalone, where 100vh can be inflated by reserved system chrome
+       and cause fixed:bottom to land past the visible area. */
+    #app {
+      position: relative;
+      height: 100dvh;
+      overflow: hidden;
+    }
     .mono { font-family: 'Space Mono', 'SF Mono', monospace; }
     .serif { font-family: 'Playfair Display', Georgia, serif; }
     .hidden { display: none !important; }
@@ -82,13 +91,13 @@
     .tabbar {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      height: calc(var(--tabbar-h) + var(--safe-bottom));
-      padding-bottom: var(--safe-bottom);
+      padding-bottom: env(safe-area-inset-bottom, 20px);
       background: var(--bg); border-top: 1px solid var(--border);
       display: grid; grid-template-columns: repeat(5, 1fr);
       z-index: 100;
     }
     .tabbar button {
+      height: 60px;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       gap: 4px; padding: 8px 0;
       font-family: 'DM Sans', sans-serif;
@@ -102,7 +111,8 @@
     .view {
       position: absolute; inset: 0;
       padding-top: calc(var(--statusbar-h) + var(--safe-top));
-      padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+      /* Clearance for both nav (~70) and add bar (~70) + safe area. */
+      padding-bottom: calc(70px + env(safe-area-inset-bottom, 20px) + 70px);
       overflow-y: auto; overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
       display: none; background: var(--bg);
@@ -110,14 +120,14 @@
     .view.active { display: block; }
     .view::-webkit-scrollbar { display: none; }
     .view-inner { padding: 4px var(--pad-x) 24px var(--pad-x); }
-    .view-inner.with-addbar { padding-bottom: calc(var(--addbar-h) + 24px); }
+    .view-inner.with-addbar { /* padding handled by .view */ }
 
     /* ── Subscreens (push-style sub pages) ────────────────────── */
     .subscreen {
       position: fixed; inset: 0; background: var(--bg);
-      z-index: 60; overflow-y: auto;
+      z-index: 110; overflow-y: auto;
       padding-top: calc(var(--statusbar-h) + var(--safe-top));
-      padding-bottom: calc(var(--addbar-h) + var(--safe-bottom));
+      padding-bottom: calc(70px + env(safe-area-inset-bottom, 20px));
     }
     .subscreen-inner { padding: 4px var(--pad-x) 24px var(--pad-x); }
     .back-row {
@@ -401,7 +411,8 @@
     /* ── Add bar ──────────────────────────────────────────────── */
     .addbar {
       position: fixed; left: 0; right: 0;
-      bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+      /* Sit directly above the tabbar (60px content + safe-area). */
+      bottom: calc(60px + env(safe-area-inset-bottom, 20px));
       height: var(--addbar-h);
       padding: 10px var(--pad-x);
       display: flex; gap: 10px; align-items: center;
